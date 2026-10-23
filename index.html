@@ -1,18 +1,55 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S.A.F.E. - CSPC Suggestions And Feedback Engagement</title>
-    <!-- Google Font: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>S.A.F.E. - CSPC Suggestions And Feedback Engagement</title>
+        
+        <!-- Prevent UI flash by hiding body until role is verified -->
+        <style>
+            body { display: none; }
+        </style>
+    
+        <!-- Student Portal Route Guard -->
+        <script>
+            (async function checkStudentAuth() {
+                try {
+                    const res = await fetch('/api/auth/me', { headers: { 'Accept': 'application/json' } });
+                    if (!res.ok) throw new Error('Unauthenticated');
+                    const data = await res.json();
+    
+                    if (!data.user) {
+                        window.location.assign('onboarding.html');
+                    } else if (data.user.role === 'admin') {
+                        alert('Administrators must use the Admin Dashboard.');
+                        window.location.assign('admin.html');
+                    } else {
+                        // User is verified student ('user' role)
+                        const revealBody = () => {
+                            if (document.body) document.body.style.display = 'block';
+                        };
+    
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', revealBody);
+                        } else {
+                            revealBody();
+                        }
+                    }
+                } catch (err) {
+                    window.location.assign('onboarding.html');
+                }
+            })();
+        </script>
+    
+        <!-- Google Font: Inter -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+        <!-- Chart.js CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <!-- Custom CSS -->
+        <link rel="stylesheet" href="style.css">
+    </head>
 <body>
     <!-- Top Site Header with CSPC S.A.F.E. Branding -->
     <header class="top-header" id="topHeader">
