@@ -552,10 +552,12 @@ async function serveStatic(request, response, url) {
     if (pathname === '/') pathname = '/onboarding.html';
     const allowedFiles = new Set([
         '/index.html',
+        '/admin.html',
         '/onboarding.html',
         '/style.css',
         '/onboarding.css',
         '/script.js',
+        '/admin.js',
         '/onboarding.js',
         '/images/safe-logo.png'
     ]);
