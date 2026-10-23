@@ -1502,10 +1502,10 @@ function initSettingsActions() {
         logoutBtn.addEventListener('click', async () => {
             try {
                 await apiRequest('/api/auth/logout', { method: 'POST' });
-                window.location.assign('onboarding.html');
             } catch (error) {
                 console.error('Unable to sign out:', error);
-                showToast(error.message);
+            } finally {
+                window.location.replace('onboarding.html');
             }
         });
     }

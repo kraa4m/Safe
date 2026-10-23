@@ -10,6 +10,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Custom Onboarding Stylesheet -->
     <link rel="stylesheet" href="onboarding.css">
+
+    <!-- Active Session Route Guard -->
+   <!-- Automatically Terminate Session on Returning to Onboarding Page -->
+   <script>
+    async function revokeSessionOnLanding() {
+        try {
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store'
+            });
+        } catch (err) {}
+    }
+
+    // Kill session on page load
+    revokeSessionOnLanding();
+
+    // Kill session when navigating back to onboarding via browser history
+    window.addEventListener('pageshow', () => {
+        revokeSessionOnLanding();
+    });
+</script>
 </head>
 <body>
     <!-- Top Site Navigation Header -->
@@ -89,7 +111,7 @@
     <div class="modal-backdrop" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle" aria-hidden="true">
         <div class="modal-card auth-modal-card">
             <button type="button" class="modal-close-icon auth-close-btn" id="closeAuthModal" aria-label="Close login and registration">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="18" x2="18" y2="18"/></svg>
             </button>
             <h3 class="modal-title" id="authModalTitle">Login to S.A.F.E.</h3>
 
@@ -130,7 +152,7 @@
                     </div>
                 </div>
                 <button type="button" class="modal-close-icon" id="closeAboutIconBtn" aria-label="Close About">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="18" x2="18" y2="18"/></svg>
                 </button>
             </div>
             <div class="about-modal-body">
