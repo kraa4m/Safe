@@ -92,19 +92,6 @@ function initOnboardingModals() {
             });
             authFormStatus.textContent = 'Login successful. Opening the dashboard...';
             window.location.assign(getRoleHome(user));
-    
-            // NEW CODE
-            if (result && result.user && result.user.role === 'admin') {
-                window.location.replace('admin.html');
-            } else if (result && result.user && result.user.role === 'gsu') {
-                window.location.replace('gsu.html');
-            } else if (result && result.user && result.user.role === 'faculty') {
-                window.location.replace('faculty.html');
-            } else if (result && result.user && ['mict', 'guidance'].includes(result.user.role)) {
-                window.location.replace('stakeholder.html');
-            } else {
-                window.location.replace('index.html');
-            }
         } catch (error) {
             console.error('Login failed:', error);
             authFormStatus.textContent = error instanceof Error
@@ -188,8 +175,11 @@ function initOnboardingModals() {
 
 // Faculty and Guidance accounts open their own dedicated view; everyone else uses the main dashboard.
 function getRoleHome(user) {
-    if (user && user.role === 'faculty') return 'faculty_view.html';
-    if (user && user.role === 'guidance') return 'guidance_view.html';
+    if (user && user.role === 'faculty') return 'faculty.html';
+    if (user && user.role === 'guidance') return 'guidance.html';
+    if (user && user.role === 'admin') return 'admin.html';
+    if (user && user.role === 'gsu') return 'gsu.html';
+    if (user && user.role === 'mict') return 'stakeholder.html';
     return 'index.html';
 }
 
