@@ -12,6 +12,11 @@
     
         <!-- Student Portal Route Guard & Navigation Security -->
         <script>
+            let authRedirecting = false;
+            function redirectToPortal(path) {
+                authRedirecting = true;
+                window.location.replace(path);
+            }
             async function checkStudentAuth() {
                 try {
                     const res = await fetch('/api/auth/me', { 
@@ -22,13 +27,21 @@
                     const data = await res.json();
         
                     if (!data.user) {
-                        window.location.replace('onboarding.html');
+                        redirectToPortal('onboarding.html');
                         return;
                     }
         
                     if (data.user.role === 'admin') {
                         alert('Administrators must use the Admin Dashboard.');
-                        window.location.replace('admin.html');
+                        redirectToPortal('admin.html');
+                        return;
+                    }
+                    if (data.user.role === 'faculty') {
+                        redirectToPortal('faculty.html');
+                        return;
+                    }
+                    if (['mict', 'guidance'].includes(data.user.role)) {
+                        redirectToPortal('stakeholder.html');
                         return;
                     }
         
@@ -45,7 +58,7 @@
                         revealBody();
                     }
                 } catch (err) {
-                    window.location.replace('onboarding.html');
+                    redirectToPortal('onboarding.html');
                 }
             }
         
@@ -59,7 +72,7 @@
         
             // Automatically destroy session on the server whenever user leaves index.html
             window.addEventListener('pagehide', () => {
-                navigator.sendBeacon('/api/auth/logout');
+                if (!authRedirecting) navigator.sendBeacon('/api/auth/logout');
             });
         </script>
     
@@ -263,10 +276,19 @@
                                             <option value="Student Life">Student Life</option>
                                             <option value="Cafeteria & Dining">Cafeteria & Dining</option>
                                             <option value="Campus Safety">Campus Safety</option>
+                                            <option value="Technical Support">Technical Support</option>
+                                            <option value="Guidance & Personal">Guidance & Personal (private)</option>
                                         </select>
                                         <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                                     </div>
+                                    <p class="stakeholder-privacy-note">Guidance &amp; Personal submissions are private and visible only to you and the Guidance Office.</p>
                                 </div>
+
+                                <label class="checkbox-container dashboard-anonymous" for="dashboardAnonymous">
+                                    <input type="checkbox" id="dashboardAnonymous">
+                                    <span class="checkbox-custom" aria-hidden="true"></span>
+                                    <span class="checkbox-text">Send anonymously</span>
+                                </label>
 
                                 <div class="form-actions">
                                     <button type="button" id="saveDraftBtn" class="btn btn-secondary">Save Draft</button>
@@ -334,6 +356,8 @@
                                                 <option value="Student Life">Student Life, Clubs & Sports</option>
                                                 <option value="Cafeteria & Dining">Canteen & Food Services</option>
                                                 <option value="Campus Safety">Campus Security, Gate & Health Clinic</option>
+                                                <option value="Technical Support">MICT & ICTU Technical Support</option>
+                                                <option value="Guidance & Personal">Guidance Office (private)</option>
                                             </select>
                                             <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                                         </div>
@@ -358,16 +382,17 @@
                                     </div>
                                 </div>
 
-                                <div class="form-group">
+                                <div class="form-group submit-message-group">
                                     <div class="label-row">
                                         <label class="form-label" for="dedMessage">Detailed Feedback or Suggestion</label>
                                         <span class="char-counter" id="dedCharCounter">0 / 800</span>
                                     </div>
                                     <textarea id="dedMessage" class="form-control feedback-textarea" rows="6" placeholder="Provide specific CSPC building, classroom number, dates, or constructive ideas for administration review..." required maxlength="800"></textarea>
                                 </div>
+                                <p class="stakeholder-privacy-note submit-privacy-note">Guidance &amp; Personal submissions are private and visible only to you and the Guidance Office.</p>
 
-                                <div class="form-group">
-                                    <label class="checkbox-container">
+                                <div class="form-group submit-anonymous-group">
+                                    <label class="checkbox-container submit-anonymous">
                                         <input type="checkbox" id="dedAnonymous">
                                         <span class="checkbox-custom"></span>
                                         <span class="checkbox-text">Submit anonymously (identity will be hidden from CSPC administrators)</span>
@@ -434,7 +459,12 @@
                                 <button class="filter-pill active" data-filter="all">All</button>
                                 <button class="filter-pill" data-filter="Facilities">Facilities</button>
                                 <button class="filter-pill" data-filter="Academic">Academic</button>
-                                <button class="filter-pill" data-filter="Dining">Dining</button>
+                                <button class="filter-pill" data-filter="Administrative">Administrative</button>
+                                <button class="filter-pill" data-filter="Student Life">Student Life</button>
+                                <button class="filter-pill" data-filter="Cafeteria &amp; Dining">Dining</button>
+                                <button class="filter-pill" data-filter="Campus Safety">Campus Safety</button>
+                                <button class="filter-pill" data-filter="Technical Support">Technical Support</button>
+                                <button class="filter-pill" data-filter="Guidance &amp; Personal">Guidance</button>
                             </div>
                             <div class="sort-select-wrap">
                                 <select id="sortSuggestionsSelect" class="sort-select">

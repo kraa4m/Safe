@@ -103,11 +103,15 @@ function initOnboardingModals() {
     
             // NEW CODE
             if (result && result.user && result.user.role === 'admin') {
-            window.location.replace('admin.html');
+                window.location.replace('admin.html');
             } else if (result && result.user && result.user.role === 'gsu') {
-             window.location.replace('gsu.html');
+                window.location.replace('gsu.html');
+            } else if (result && result.user && result.user.role === 'faculty') {
+                window.location.replace('faculty.html');
+            } else if (result && result.user && ['mict', 'guidance'].includes(result.user.role)) {
+                window.location.replace('stakeholder.html');
             } else {
-         window.location.replace('index.html');
+                window.location.replace('index.html');
             }
         } catch (error) {
             console.error('Login failed:', error);
