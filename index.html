@@ -10,35 +10,70 @@
             body { display: none; }
         </style>
     
-        <!-- Student Portal Route Guard -->
+        <!-- Student Portal Route Guard & Navigation Security -->
         <script>
-            (async function checkStudentAuth() {
+            let authRedirecting = false;
+            function redirectToPortal(path) {
+                authRedirecting = true;
+                window.location.replace(path);
+            }
+            async function checkStudentAuth() {
                 try {
-                    const res = await fetch('/api/auth/me', { headers: { 'Accept': 'application/json' } });
+                    const res = await fetch('/api/auth/me', { 
+                        headers: { 'Accept': 'application/json' },
+                        cache: 'no-store'
+                    });
                     if (!res.ok) throw new Error('Unauthenticated');
                     const data = await res.json();
-    
+        
                     if (!data.user) {
-                        window.location.assign('onboarding.html');
-                    } else if (data.user.role === 'admin') {
+                        redirectToPortal('onboarding.html');
+                        return;
+                    }
+        
+                    if (data.user.role === 'admin') {
                         alert('Administrators must use the Admin Dashboard.');
-                        window.location.assign('admin.html');
-                    } else {
-                        // User is verified student ('user' role)
-                        const revealBody = () => {
-                            if (document.body) document.body.style.display = 'block';
-                        };
-    
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', revealBody);
-                        } else {
-                            revealBody();
+                        redirectToPortal('admin.html');
+                        return;
+                    }
+                    if (data.user.role === 'faculty') {
+                        redirectToPortal('faculty.html');
+                        return;
+                    }
+                    if (['mict', 'guidance'].includes(data.user.role)) {
+                        redirectToPortal('stakeholder.html');
+                        return;
+                    }
+        
+                    const revealBody = () => {
+                        if (document.body) {
+                            document.body.style.display = 'block';
+                            document.body.classList.add('auth-verified');
                         }
+                    };
+        
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', revealBody);
+                    } else {
+                        revealBody();
                     }
                 } catch (err) {
-                    window.location.assign('onboarding.html');
+                    redirectToPortal('onboarding.html');
                 }
-            })();
+            }
+        
+            // Verify session on page load
+            checkStudentAuth();
+        
+            // Re-verify session when navigating back/forward
+            window.addEventListener('pageshow', () => {
+                checkStudentAuth();
+            });
+        
+            // Automatically destroy session on the server whenever user leaves index.html
+            window.addEventListener('pagehide', () => {
+                if (!authRedirecting) navigator.sendBeacon('/api/auth/logout');
+            });
         </script>
     
         <!-- Google Font: Inter -->
@@ -155,28 +190,24 @@
             <nav class="sidebar-nav">
                 <a href="#dashboard" class="nav-item active" data-page="dashboard">
                     <span class="nav-icon-box">
-                        <!-- Dashboard Grid Icon -->
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
                     </span>
                     <span class="nav-label">Dashboard</span>
                 </a>
                 <a href="#submit" class="nav-item" data-page="submit">
                     <span class="nav-icon-box">
-                        <!-- Submit Feedback Icon -->
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>
                     </span>
                     <span class="nav-label">Submit Feedback</span>
                 </a>
                 <a href="#suggestions" class="nav-item" data-page="suggestions">
                     <span class="nav-icon-box">
-                        <!-- Suggestions User Icon -->
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </span>
                     <span class="nav-label">Suggestions</span>
                 </a>
                 <a href="#reports" class="nav-item" data-page="reports">
                     <span class="nav-icon-box">
-                        <!-- Reports Analytics Curve Icon -->
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                     </span>
                     <span class="nav-label">Reports</span>
@@ -189,7 +220,6 @@
                 </a>
                 <a href="#settings" class="nav-item" data-page="settings">
                     <span class="nav-icon-box">
-                        <!-- Settings Sliders Icon -->
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
                     </span>
                     <span class="nav-label">Settings</span>
@@ -211,12 +241,9 @@
 
         <!-- Main Workspace -->
         <div class="main-wrapper">
-            <!-- Dashboard Content Container with Tabbed Views -->
             <main class="dashboard-content">
 
-                <!-- ==========================================
-                     VIEW 1: DASHBOARD (CSPC S.A.F.E. Mockup)
-                     ========================================== -->
+                <!-- VIEW 1: DASHBOARD -->
                 <section class="view-panel active" id="view-dashboard">
                     <div class="view-header flex-header">
                         <div>
@@ -224,9 +251,7 @@
                             <p class="view-subtitle">Monitor campus suggestions, submit new feedback, and track resolution metrics.</p>
                         </div>
                     </div>
-                    <!-- Top Row: Feedback Form + Suggestions List -->
                     <div class="top-row-grid">
-                        <!-- Submit Feedback Card -->
                         <div class="card feedback-form-card">
                             <form id="feedbackForm" onsubmit="return false;">
                                 <div class="form-group">
@@ -251,10 +276,19 @@
                                             <option value="Student Life">Student Life</option>
                                             <option value="Cafeteria & Dining">Cafeteria & Dining</option>
                                             <option value="Campus Safety">Campus Safety</option>
+                                            <option value="Technical Support">Technical Support</option>
+                                            <option value="Guidance & Personal">Guidance & Personal (private)</option>
                                         </select>
                                         <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                                     </div>
+                                    <p class="stakeholder-privacy-note">Guidance &amp; Personal submissions are private and visible only to you and the Guidance Office.</p>
                                 </div>
+
+                                <label class="checkbox-container dashboard-anonymous" for="dashboardAnonymous">
+                                    <input type="checkbox" id="dashboardAnonymous">
+                                    <span class="checkbox-custom" aria-hidden="true"></span>
+                                    <span class="checkbox-text">Send anonymously</span>
+                                </label>
 
                                 <div class="form-actions">
                                     <button type="button" id="saveDraftBtn" class="btn btn-secondary">Save Draft</button>
@@ -263,11 +297,8 @@
                             </form>
                         </div>
 
-                        <!-- Suggestions Feed Column -->
                         <div class="suggestions-column-wrap">
                             <div class="suggestions-column" id="suggestionsContainer"></div>
-
-                            <!-- Empty dashboard feed state -->
                             <div class="empty-state" id="dashEmptyState" style="display: none;">
                                 <div class="empty-icon-wrap">
                                     <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -278,9 +309,7 @@
                         </div>
                     </div>
 
-                    <!-- Bottom Row: Analytics Charts -->
                     <div class="bottom-row-grid">
-                        <!-- Monthly Feedback Volume Bar Chart Card -->
                         <div class="card chart-card">
                             <h2 class="chart-title">Monthly Feedback Volume</h2>
                             <div class="chart-body">
@@ -290,7 +319,6 @@
                             </div>
                         </div>
 
-                        <!-- Category Breakdown Donut / Pie Chart Card -->
                         <div class="card chart-card">
                             <h2 class="chart-title">Category Breakdown</h2>
                             <div class="chart-body">
@@ -302,10 +330,7 @@
                     </div>
                 </section>
 
-
-                <!-- ==========================================
-                     VIEW 2: SUBMIT FEEDBACK (CSPC S.A.F.E. Dedicated)
-                     ========================================== -->
+                <!-- VIEW 2: SUBMIT FEEDBACK -->
                 <section class="view-panel" id="view-submit" style="display: none;">
                     <div class="view-header">
                         <h2>Submit to CSPC S.A.F.E.</h2>
@@ -331,6 +356,8 @@
                                                 <option value="Student Life">Student Life, Clubs & Sports</option>
                                                 <option value="Cafeteria & Dining">Canteen & Food Services</option>
                                                 <option value="Campus Safety">Campus Security, Gate & Health Clinic</option>
+                                                <option value="Technical Support">MICT & ICTU Technical Support</option>
+                                                <option value="Guidance & Personal">Guidance Office (private)</option>
                                             </select>
                                             <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                                         </div>
@@ -355,16 +382,17 @@
                                     </div>
                                 </div>
 
-                                <div class="form-group">
+                                <div class="form-group submit-message-group">
                                     <div class="label-row">
                                         <label class="form-label" for="dedMessage">Detailed Feedback or Suggestion</label>
                                         <span class="char-counter" id="dedCharCounter">0 / 800</span>
                                     </div>
                                     <textarea id="dedMessage" class="form-control feedback-textarea" rows="6" placeholder="Provide specific CSPC building, classroom number, dates, or constructive ideas for administration review..." required maxlength="800"></textarea>
                                 </div>
+                                <p class="stakeholder-privacy-note submit-privacy-note">Guidance &amp; Personal submissions are private and visible only to you and the Guidance Office.</p>
 
-                                <div class="form-group">
-                                    <label class="checkbox-container">
+                                <div class="form-group submit-anonymous-group">
+                                    <label class="checkbox-container submit-anonymous">
                                         <input type="checkbox" id="dedAnonymous">
                                         <span class="checkbox-custom"></span>
                                         <span class="checkbox-text">Submit anonymously (identity will be hidden from CSPC administrators)</span>
@@ -419,10 +447,7 @@
                     </div>
                 </section>
 
-
-                <!-- ==========================================
-                     VIEW 3: SUGGESTIONS FEED (CSPC Community)
-                     ========================================== -->
+                <!-- VIEW 3: SUGGESTIONS COMMUNITY -->
                 <section class="view-panel" id="view-suggestions" style="display: none;">
                     <div class="view-header flex-header">
                         <div>
@@ -434,7 +459,12 @@
                                 <button class="filter-pill active" data-filter="all">All</button>
                                 <button class="filter-pill" data-filter="Facilities">Facilities</button>
                                 <button class="filter-pill" data-filter="Academic">Academic</button>
-                                <button class="filter-pill" data-filter="Dining">Dining</button>
+                                <button class="filter-pill" data-filter="Administrative">Administrative</button>
+                                <button class="filter-pill" data-filter="Student Life">Student Life</button>
+                                <button class="filter-pill" data-filter="Cafeteria &amp; Dining">Dining</button>
+                                <button class="filter-pill" data-filter="Campus Safety">Campus Safety</button>
+                                <button class="filter-pill" data-filter="Technical Support">Technical Support</button>
+                                <button class="filter-pill" data-filter="Guidance &amp; Personal">Guidance</button>
                             </div>
                             <div class="sort-select-wrap">
                                 <select id="sortSuggestionsSelect" class="sort-select">
@@ -457,10 +487,7 @@
                     </div>
                 </section>
 
-
-                <!-- ==========================================
-                     VIEW 4: REPORTS & ANALYTICS (CSPC)
-                     ========================================== -->
+                <!-- VIEW 4: REPORTS & ANALYTICS -->
                 <section class="view-panel" id="view-reports" style="display: none;">
                     <div class="view-header flex-header">
                         <div>
@@ -548,9 +575,7 @@
                     </div>
                 </section>
 
-                <!-- ==========================================
-                     ADMIN REPORT MANAGEMENT
-                     ========================================== -->
+                <!-- ADMIN REPORT MANAGEMENT -->
                 <section class="view-panel" id="view-admin" style="display: none;">
                     <div class="view-header">
                         <h2>Admin Panel</h2>
@@ -568,9 +593,7 @@
                     </div>
                 </section>
 
-                <!-- ==========================================
-                     VIEW 5: SETTINGS (CSPC Profile)
-                     ========================================== -->
+                <!-- VIEW 5: SETTINGS -->
                 <section class="view-panel" id="view-settings" style="display: none;">
                     <div class="view-header">
                         <h2>CSPC Account & Preferences</h2>
@@ -687,7 +710,7 @@
                     <span class="modal-subtitle">CSPC community insights & official administrative notes</span>
                 </div>
                 <button type="button" class="modal-close-btn" id="closeCommentsModalBtn">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="18" x2="18" y2="18"/></svg>
                 </button>
             </div>
             <div class="modal-body">

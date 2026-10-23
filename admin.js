@@ -52,7 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ...options
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Request failed');
+        if (!res.ok) {
+            const error = new Error(data.error || 'Request failed');
+            error.status = res.status;
+            throw error;
+        }
         return data;
     }
 
@@ -65,6 +69,84 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCharts();
         } catch (err) {
             showToast(err.message || 'Failed to load feedback records.');
+        }
+    }
+
+    async function loadStakeholderAccounts() {
+        const accountList = document.getElementById('stakeholderAccountList');
+        if (!accountList) return;
+        const accountCount = document.getElementById('stakeholderAccountCount');
+        accountList.setAttribute('aria-busy', 'true');
+        accountList.innerHTML = '<p class="stakeholder-account-empty">Loading accounts...</p>';
+        try {
+            const { users } = await apiRequest('/api/admin/stakeholders');
+            accountList.setAttribute('aria-busy', 'false');
+            accountCount.textContent = `${users.length} ${users.length === 1 ? 'account' : 'accounts'}`;
+            if (!users.length) {
+                accountList.innerHTML = `
+                    <div class="stakeholder-account-empty">
+                        <strong>No accounts yet</strong>
+                        <span>Create the first stakeholder account using the form.</span>
+                    </div>`;
+                return;
+            }
+            const roleLabels = {
+                faculty: 'Faculty',
+                gsu: 'General Service Unit',
+                mict: 'MICT & ICTU',
+                guidance: 'Guidance Office'
+            };
+            accountList.innerHTML = users.map(user => `
+                <article class="stakeholder-account-row">
+                    <div class="stakeholder-account-identity">
+                        <span class="stakeholder-account-avatar" aria-hidden="true">${escapeHtml(user.name.trim().charAt(0).toUpperCase())}</span>
+                        <div>
+                            <strong>${escapeHtml(user.name)}</strong>
+                            <span>${escapeHtml(user.email)}</span>
+                        </div>
+                    </div>
+                    <span class="stakeholder-account-role">${roleLabels[user.role] || escapeHtml(user.role)}</span>
+                </article>
+            `).join('');
+        } catch (error) {
+            accountList.setAttribute('aria-busy', 'false');
+            accountCount.textContent = '';
+            const message = error.status === 404
+                ? 'Restart the app server to load the stakeholder account API, then refresh this list.'
+                : error.message || 'Unable to load stakeholder accounts.';
+            accountList.innerHTML = `
+                <div class="stakeholder-account-error">
+                    <strong>Accounts could not be loaded</strong>
+                    <span>${escapeHtml(message)}</span>
+                </div>`;
+            showToast(message);
+        }
+    }
+
+    async function createStakeholderAccount(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const button = document.getElementById('createStakeholderButton');
+        const status = document.getElementById('stakeholderAccountStatus');
+        button.disabled = true;
+        status.textContent = 'Creating account...';
+        try {
+            const { user } = await apiRequest('/api/admin/stakeholders', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: form.elements.name.value,
+                    email: form.elements.email.value,
+                    role: form.elements.role.value,
+                    password: form.elements.password.value
+                })
+            });
+            form.reset();
+            status.textContent = `Created ${user.name} (${user.email}) as ${user.role}. Share the password securely; it will not be shown again.`;
+            await loadStakeholderAccounts();
+        } catch (error) {
+            status.textContent = error.message || 'Unable to create stakeholder account.';
+        } finally {
+            button.disabled = false;
         }
     }
 
@@ -86,21 +168,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const matchesStatus = activeStatusFilter === 'all' || item.status === activeStatusFilter;
             const matchesCategory = activeCategoryFilter === 'all' || item.category === activeCategoryFilter;
             const query = searchQuery.toLowerCase();
+            
+
             const matchesSearch = !query || 
                 item.subject.toLowerCase().includes(query) || 
                 item.message.toLowerCase().includes(query) ||
-                item.author.toLowerCase().includes(query) ||
                 item.category.toLowerCase().includes(query);
-
+    
             return matchesStatus && matchesCategory && matchesSearch;
         });
-
+    
         if (filtered.length === 0) {
             reportsList.innerHTML = '';
             reportsEmpty.style.display = 'block';
             return;
         }
-
+    
         reportsEmpty.style.display = 'none';
         reportsList.innerHTML = filtered.map(item => `
             <div class="admin-report-card">
@@ -113,10 +196,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="item-title">${escapeHtml(item.subject)}</h3>
                     <p class="item-description">${escapeHtml(item.message)}</p>
                     <div class="admin-report-author">
-                        Submitted by: <strong>${escapeHtml(item.author)}</strong> • Urgency: <strong>${item.urgency}</strong> • Votes: <strong>${item.votes}</strong>
+                        Urgency: <strong>${item.urgency}</strong> • Votes: <strong>${item.votes}</strong>
                     </div>
                 </div>
-
+    
                 <div class="admin-report-actions">
                     <div>
                         <label class="form-label">Update Status</label>
@@ -133,8 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `).join('');
-
-        // Bind status change listeners
+    
+ 
         document.querySelectorAll('.status-change-select').forEach(select => {
             select.addEventListener('change', async (e) => {
                 const id = e.target.getAttribute('data-id');
@@ -142,10 +225,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 await handleStatusUpdate(id, newStatus);
             });
         });
-
-        // Bind comment modal triggers
+    
         document.querySelectorAll('.open-comments-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', () => {
                 const id = btn.getAttribute('data-id');
                 const title = btn.getAttribute('data-title');
                 openCommentsModal(id, title);
@@ -222,6 +304,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupEventListeners() {
+        document.getElementById('stakeholderAccountForm')
+            ?.addEventListener('submit', createStakeholderAccount);
+        document.getElementById('refreshStakeholdersButton')
+            ?.addEventListener('click', loadStakeholderAccounts);
+        const roleDescriptions = {
+            faculty: 'Faculty accounts can submit academic and administrative feedback.',
+            gsu: 'GSU accounts can review facilities, dining, and campus safety reports.',
+            mict: 'MICT & ICTU accounts can manage technical support reports.',
+            guidance: 'Guidance accounts can access confidential personal submissions.'
+        };
+        document.getElementById('stakeholderRole')?.addEventListener('change', event => {
+            document.getElementById('stakeholderRoleHint').textContent =
+                roleDescriptions[event.currentTarget.value];
+        });
+
         // Filters
         document.querySelectorAll('.filter-pill-group .filter-pill').forEach(pill => {
             pill.addEventListener('click', () => {
@@ -262,6 +359,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
                 const activePanel = document.getElementById(`view-${targetPage}`);
                 if (activePanel) activePanel.classList.add('active');
+                document.getElementById('adminReportSummary').hidden = targetPage === 'accounts';
+                if (targetPage === 'accounts') loadStakeholderAccounts();
 
                 closeSidebar();
             });
@@ -340,7 +439,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Category Chart
-        const categories = ['Facilities', 'Academic', 'Administrative', 'Student Life', 'Cafeteria & Dining', 'Campus Safety'];
+        const categories = [
+            'Facilities',
+            'Academic',
+            'Administrative',
+            'Student Life',
+            'Cafeteria & Dining',
+            'Campus Safety',
+            'Technical Support'
+        ];
         const categoryCounts = categories.map(cat => allFeedback.filter(f => f.category === cat).length);
 
         const ctxCategory = document.getElementById('adminCategoryChart').getContext('2d');
@@ -351,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 labels: categories,
                 datasets: [{
                     data: categoryCounts,
-                    backgroundColor: ['#2563eb', '#0d9488', '#f59e0b', '#8b5cf6', '#ef4444', '#10b981']
+                    backgroundColor: ['#2563eb', '#0d9488', '#f59e0b', '#8b5cf6', '#ef4444', '#10b981', '#64748b']
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
