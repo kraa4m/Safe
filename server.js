@@ -37,7 +37,9 @@ const CATEGORIES = new Set([
     'Administrative',
     'Student Life',
     'Cafeteria & Dining',
-    'Campus Safety'
+    'Campus Safety',
+    'Technical Support',
+    'Guidance & Personal'
 ]);
 
 const MIME_TYPES = {
@@ -128,6 +130,14 @@ async function requireGsuOrAdmin(request) {
     return user;
 }
 
+async function requireStakeholder(request) {
+    const user = await requireUser(request);
+    if (!['faculty', 'mict', 'guidance'].includes(user.role)) {
+        throw fail(403, 'Stakeholder access is required.');
+    }
+    return user;
+}
+
 function publicUser(user) {
     return {
         id: user.id,
@@ -189,6 +199,7 @@ async function serializeFeedback(item, user) {
         category: item.category,
         urgency: item.urgency,
         anonymous: Boolean(item.anonymous),
+        confidential: Boolean(item.is_confidential),
         author: item.anonymous ? 'Anonymous Student' : item.author_name,
         status: item.status,
         createdAt: new Date(item.created_at).toISOString(),
@@ -254,6 +265,7 @@ async function initializeDatabase() {
             category VARCHAR(40) NOT NULL,
             urgency VARCHAR(20) NOT NULL,
             status VARCHAR(40) NOT NULL,
+            is_confidential BOOLEAN NOT NULL DEFAULT FALSE,
             created_at DATETIME(3) NOT NULL,
             INDEX idx_feedback_created (created_at),
             CONSTRAINT fk_feedback_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -276,6 +288,29 @@ async function initializeDatabase() {
             INDEX idx_comments_feedback_created (feedback_id, created_at),
             CONSTRAINT fk_comments_feedback FOREIGN KEY (feedback_id) REFERENCES feedback(id) ON DELETE CASCADE,
             CONSTRAINT fk_comments_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS notifications (
+            id CHAR(36) NOT NULL PRIMARY KEY,
+            user_id CHAR(36) NOT NULL,
+            feedback_id CHAR(36) NOT NULL,
+            type VARCHAR(20) NOT NULL,
+            detail VARCHAR(500) NOT NULL,
+            is_read BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at DATETIME(3) NOT NULL,
+            INDEX idx_notifications_user_created (user_id, created_at),
+            CONSTRAINT fk_notifications_feedback FOREIGN KEY (feedback_id) REFERENCES feedback(id) ON DELETE CASCADE,
+            CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+        `CREATE TABLE IF NOT EXISTS technical_tickets (
+            id CHAR(36) NOT NULL PRIMARY KEY,
+            user_id CHAR(36) NOT NULL,
+            author_name VARCHAR(100) NOT NULL,
+            subject VARCHAR(100) NOT NULL,
+            message VARCHAR(800) NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'Open',
+            created_at DATETIME(3) NOT NULL,
+            INDEX idx_technical_tickets_created (created_at),
+            CONSTRAINT fk_technical_tickets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
     ];
     for (const statement of schema) await pool.query(statement);
@@ -287,59 +322,50 @@ async function initializeDatabase() {
     if (!commentColumns.length) {
         await pool.query('ALTER TABLE comments ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE');
     }
-    await initializeAdminAccount();
-    await initializeGsuAccount();
+    const [confidentialColumn] = await pool.query("SHOW COLUMNS FROM feedback LIKE 'is_confidential'");
+    if (!confidentialColumn.length) {
+        await pool.query('ALTER TABLE feedback ADD COLUMN is_confidential BOOLEAN NOT NULL DEFAULT FALSE');
+    }
+    await initializeConfiguredAccount({
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        name: 'S.A.F.E. Administrator',
+        department: 'CSPC Administration',
+        role: 'admin',
+        label: 'ADMIN'
+    });
+    await initializeConfiguredAccount({
+        email: GSU_EMAIL,
+        password: GSU_PASSWORD,
+        name: 'General Services Unit',
+        department: 'General Services Unit',
+        role: 'gsu',
+        label: 'GSU'
+    });
     await pool.query('SELECT 1');
 }
 
-async function initializeAdminAccount() {
-    if (!ADMIN_EMAIL && !ADMIN_PASSWORD) return;
-    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-        throw new Error('Set both ADMIN_EMAIL and ADMIN_PASSWORD to enable the admin account.');
+async function initializeConfiguredAccount({ email, password, name, department, role, label }) {
+    if (!email && !password) return;
+    if (!email || !password) {
+        throw new Error(`Set both ${label}_EMAIL and ${label}_PASSWORD to enable this account.`);
     }
-    const email = validateEmail(ADMIN_EMAIL);
-    if (ADMIN_PASSWORD.length < 12 || ADMIN_PASSWORD.length > 128) {
-        throw new Error('ADMIN_PASSWORD must be between 12 and 128 characters.');
+    const accountEmail = validateEmail(email);
+    if (password.length < 12 || password.length > 128) {
+        throw new Error(`${label}_PASSWORD must be between 12 and 128 characters.`);
     }
     const salt = randomBytes(16);
-    const passwordHash = Buffer.from(await scrypt(ADMIN_PASSWORD, salt, 64));
+    const passwordHash = Buffer.from(await scrypt(password, salt, 64));
     await pool.execute(
         `INSERT INTO users (id, name, email, department, role, salt, password_hash, created_at)
-         VALUES (?, 'S.A.F.E. Administrator', ?, 'CSPC Administration', 'admin', ?, ?, ?)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
             name = VALUES(name),
             department = VALUES(department),
-            role = 'admin',
+            role = VALUES(role),
             salt = VALUES(salt),
             password_hash = VALUES(password_hash)`,
-        [randomUUID(), email, salt.toString('hex'), passwordHash.toString('hex'), new Date()]
-    );
-}
-
-async function initializeGsuAccount() {
-    if (!GSU_EMAIL && !GSU_PASSWORD) return;
-    if (!GSU_EMAIL || !GSU_PASSWORD) {
-        throw new Error('Set both GSU_EMAIL and GSU_PASSWORD to enable the GSU account.');
-    }
-
-    const email = validateEmail(GSU_EMAIL);
-    if (GSU_PASSWORD.length < 12 || GSU_PASSWORD.length > 128) {
-        throw new Error('GSU_PASSWORD must be between 12 and 128 characters.');
-    }
-
-    const salt = randomBytes(16);
-    const passwordHash = Buffer.from(await scrypt(GSU_PASSWORD, salt, 64));
-
-    await pool.execute(
-        `INSERT INTO users (id, name, email, department, role, salt, password_hash, created_at)
-        VALUES (?, 'General Services Unit', ?, 'General Services Unit', 'gsu', ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-            name = VALUES(name),
-            department = VALUES(department),
-            role = 'gsu',
-            salt = VALUES(salt),
-            password_hash = VALUES(password_hash)`,
-        [randomUUID(), email, salt.toString('hex'), passwordHash.toString('hex'), new Date()]
+        [randomUUID(), name, accountEmail, department, role, salt.toString('hex'), passwordHash.toString('hex'), new Date()]
     );
 }
 
@@ -354,10 +380,32 @@ async function handleApi(request, response, url) {
     
         const [items] = await pool.execute(
             `SELECT * FROM feedback 
-             WHERE LOWER(TRIM(category)) IN ('facilities', 'cafeteria & dining', 'cafeteria and dining', 'campus safety') 
+             WHERE is_confidential = FALSE
+               AND LOWER(TRIM(category)) IN ('facilities', 'cafeteria & dining', 'cafeteria and dining', 'campus safety')
              ORDER BY created_at DESC`
         );
     
+        const feedback = await Promise.all(items.map(item => serializeFeedback(item, user)));
+        return sendJson(response, 200, { feedback });
+    }
+    if (request.method === 'GET' && pathname === '/api/stakeholder/feedback') {
+        const user = await requireStakeholder(request);
+        let query;
+        if (user.role === 'faculty') {
+            query = pool.execute(
+                'SELECT * FROM feedback WHERE user_id = ? ORDER BY created_at DESC',
+                [user.id]
+            );
+        } else if (user.role === 'mict') {
+            query = pool.execute(
+                "SELECT * FROM feedback WHERE category = 'Technical Support' AND is_confidential = FALSE ORDER BY created_at DESC"
+            );
+        } else {
+            query = pool.execute(
+                "SELECT * FROM feedback WHERE category = 'Guidance & Personal' AND is_confidential = TRUE ORDER BY created_at DESC"
+            );
+        }
+        const [items] = await query;
         const feedback = await Promise.all(items.map(item => serializeFeedback(item, user)));
         return sendJson(response, 200, { feedback });
     }
@@ -415,6 +463,59 @@ async function handleApi(request, response, url) {
         return sendJson(response, 200, { user: user ? publicUser(user) : null });
     }
 
+    if (request.method === 'GET' && pathname === '/api/admin/stakeholders') {
+        await requireAdmin(request);
+        const [users] = await pool.query(
+            `SELECT id, name, email, department, role, created_at AS createdAt
+             FROM users
+             WHERE role IN ('faculty', 'gsu', 'mict', 'guidance')
+             ORDER BY role, name`
+        );
+        return sendJson(response, 200, { users });
+    }
+
+    if (request.method === 'POST' && pathname === '/api/admin/stakeholders') {
+        await requireAdmin(request);
+        const body = await readJson(request);
+        const name = validateText(body.name, 'Name', 100, 2);
+        const email = validateEmail(body.email);
+        const roleDetails = {
+            faculty: 'CSPC Faculty',
+            gsu: 'General Services Unit',
+            mict: 'MICT & ICTU',
+            guidance: 'Guidance Office'
+        };
+        if (!Object.hasOwn(roleDetails, body.role)) {
+            throw fail(400, 'Choose a valid stakeholder role.');
+        }
+        if (typeof body.password !== 'string' || body.password.length < 12 || body.password.length > 128) {
+            throw fail(400, 'Password must be between 12 and 128 characters.');
+        }
+
+        const salt = randomBytes(16);
+        const passwordHash = Buffer.from(await scrypt(body.password, salt, 64));
+        const role = body.role;
+        const user = {
+            id: randomUUID(),
+            name,
+            email,
+            department: roleDetails[role],
+            role
+        };
+        try {
+            await pool.execute(
+                `INSERT INTO users (id, name, email, department, role, salt, password_hash, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [user.id, name, email, user.department, role, salt.toString('hex'),
+                    passwordHash.toString('hex'), new Date()]
+            );
+        } catch (error) {
+            if (error.code === 'ER_DUP_ENTRY') throw fail(409, 'An account with this email already exists.');
+            throw error;
+        }
+        return sendJson(response, 201, { user: publicUser(user) });
+    }
+
     if (request.method === 'POST' && pathname === '/api/auth/logout') {
         const token = getCookies(request).safe_session;
         if (token) {
@@ -449,7 +550,10 @@ async function handleApi(request, response, url) {
 
     if (request.method === 'GET' && pathname === '/api/feedback') {
         const user = await getUser(request);
-        const [items] = await pool.execute('SELECT * FROM feedback ORDER BY created_at DESC');
+        const [items] = await pool.execute(
+            'SELECT * FROM feedback WHERE is_confidential = FALSE OR user_id = ? ORDER BY created_at DESC',
+            [user ? user.id : null]
+        );
         const feedback = await Promise.all(items.map(item => serializeFeedback(item, user)));
         return sendJson(response, 200, { feedback });
     }
@@ -466,14 +570,17 @@ async function handleApi(request, response, url) {
         if (!CATEGORIES.has(category)) {
             throw fail(400, 'Please select a valid feedback category.');
         }
-
+        if (user.role === 'faculty' && !['Academic', 'Administrative'].includes(category)) {
+            throw fail(403, 'Faculty accounts can submit Academic or Administrative feedback only.');
+        }
         const id = randomUUID();
         const createdAt = new Date();
+        const confidential = category === 'Guidance & Personal';
 
         await pool.execute(
-            `INSERT INTO feedback (id, user_id, author_name, anonymous, subject, message, category, urgency, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Just Submitted', ?)`,
-            [id, user.id, user.name, anonymous, subject, message, category, urgency, createdAt]
+            `INSERT INTO feedback (id, user_id, author_name, anonymous, subject, message, category, urgency, status, is_confidential, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Just Submitted', ?, ?)`,
+            [id, user.id, user.name, anonymous, subject, message, category, urgency, confidential, createdAt]
         );
 
         const [rows] = await pool.execute('SELECT * FROM feedback WHERE id = ?', [id]);
@@ -484,30 +591,53 @@ async function handleApi(request, response, url) {
 
     if (request.method === 'GET' && pathname === '/api/admin/feedback') {
         const user = await requireAdmin(request);
-        const [items] = await pool.execute('SELECT * FROM feedback ORDER BY created_at DESC');
+        const [items] = await pool.execute(
+            'SELECT * FROM feedback WHERE is_confidential = FALSE ORDER BY created_at DESC'
+        );
         const feedback = await Promise.all(items.map(item => serializeFeedback(item, user)));
         return sendJson(response, 200, { feedback });
     }
 
-    const statusMatch = pathname.match(/^\/api\/(?:admin|gsu)\/feedback\/([0-9a-f-]+)\/status$/i);
+    const statusMatch = pathname.match(/^\/api\/(?:admin|gsu|stakeholder)\/feedback\/([0-9a-f-]+)\/status$/i);
     if (request.method === 'PATCH' && statusMatch) {
-        const user = await requireGsuOrAdmin(request);
+        const user = await requireUser(request);
+        if (!['admin', 'gsu', 'mict', 'guidance'].includes(user.role)) {
+            throw fail(403, 'Stakeholder access is required to update report status.');
+        }
+        if (pathname.startsWith('/api/admin/') && user.role !== 'admin') {
+            throw fail(403, 'Administrator access is required.');
+        }
+        if (pathname.startsWith('/api/gsu/') && !['gsu', 'admin'].includes(user.role)) {
+            throw fail(403, 'GSU access is required.');
+        }
+        if (pathname.startsWith('/api/stakeholder/') && !['mict', 'guidance', 'admin'].includes(user.role)) {
+            throw fail(403, 'Stakeholder access is required.');
+        }
         const body = await readJson(request);
         const status = validateText(body.status, 'Status', 40);
     
         if (!['Just Submitted', 'Under Review', 'In Progress', 'Approved', 'Resolved', 'Rejected'].includes(status)) {
             throw fail(400, 'Choose a valid report status.');
         }
-    
-        // Ensure GSU can only modify reports in their permitted categories
-        if (user.role === 'gsu') {
-            const [rows] = await pool.execute('SELECT category FROM feedback WHERE id = ?', [statusMatch[1]]);
-            if (!rows.length) throw fail(404, 'Feedback not found.');
-            
-            const allowedCategories = new Set(['Facilities', 'Cafeteria & Dining', 'Campus Safety']);
-            if (!allowedCategories.has(rows[0].category)) {
-                throw fail(403, 'GSU accounts can only manage Facilities, Cafeteria & Dining, and Campus Safety reports.');
-            }
+
+        const [items] = await pool.execute(
+            'SELECT category, is_confidential FROM feedback WHERE id = ?',
+            [statusMatch[1]]
+        );
+        if (!items.length) throw fail(404, 'Feedback not found.');
+        const item = items[0];
+        const allowedCategories = {
+            gsu: ['Facilities', 'Cafeteria & Dining', 'Campus Safety'],
+            mict: ['Technical Support'],
+            guidance: ['Guidance & Personal']
+        };
+        if (item.is_confidential && user.role !== 'guidance') {
+            throw fail(403, 'Confidential Guidance reports can only be managed by the Guidance Office.');
+        }
+        if (user.role !== 'admin' &&
+            (!allowedCategories[user.role] || !allowedCategories[user.role].includes(item.category) ||
+                (user.role === 'guidance' && !item.is_confidential))) {
+            throw fail(403, 'Your account cannot manage reports in this category.');
         }
     
         const [result] = await pool.execute(
@@ -526,10 +656,11 @@ async function handleApi(request, response, url) {
         try {
             await connection.beginTransaction();
             const [items] = await connection.execute(
-                'SELECT id FROM feedback WHERE id = ? FOR UPDATE',
+                'SELECT id, is_confidential FROM feedback WHERE id = ? FOR UPDATE',
                 [voteMatch[1]]
             );
             if (!items.length) throw fail(404, 'Feedback not found.');
+            if (items[0].is_confidential) throw fail(404, 'Feedback not found.');
             const [existing] = await connection.execute(
                 'SELECT user_id FROM votes WHERE feedback_id = ? AND user_id = ?',
                 [voteMatch[1], user.id]
@@ -562,8 +693,17 @@ async function handleApi(request, response, url) {
 
     const commentsMatch = pathname.match(/^\/api\/feedback\/([0-9a-f-]+)\/comments$/i);
     if (commentsMatch && request.method === 'GET') {
-        const [items] = await pool.execute('SELECT id FROM feedback WHERE id = ?', [commentsMatch[1]]);
+        const [items] = await pool.execute(
+            'SELECT id, user_id, is_confidential FROM feedback WHERE id = ?',
+            [commentsMatch[1]]
+        );
         if (!items.length) throw fail(404, 'Feedback not found.');
+        if (items[0].is_confidential) {
+            const user = await requireUser(request);
+            if (user.role !== 'guidance' && user.id !== items[0].user_id) {
+                throw fail(404, 'Feedback not found.');
+            }
+        }
         const [comments] = await pool.execute(
             `SELECT id, author_name AS authorName, message, is_admin AS isAdmin, created_at AS createdAt
              FROM comments WHERE feedback_id = ? ORDER BY created_at ASC`,
@@ -580,8 +720,15 @@ async function handleApi(request, response, url) {
 
     if (commentsMatch && request.method === 'POST') {
         const user = await requireUser(request);
-        const [items] = await pool.execute('SELECT id FROM feedback WHERE id = ?', [commentsMatch[1]]);
+        const [items] = await pool.execute(
+            'SELECT id, user_id, is_confidential FROM feedback WHERE id = ?',
+            [commentsMatch[1]]
+        );
         if (!items.length) throw fail(404, 'Feedback not found.');
+        if (items[0].is_confidential &&
+            user.role !== 'guidance' && user.id !== items[0].user_id) {
+            throw fail(404, 'Feedback not found.');
+        }
         const body = await readJson(request);
         const message = validateText(body.message, 'Comment', 500);
         const comment = {
@@ -594,10 +741,14 @@ async function handleApi(request, response, url) {
             `INSERT INTO comments (id, feedback_id, user_id, author_name, message, is_admin, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [comment.id, commentsMatch[1], user.id, comment.authorName, comment.message,
-                user.role === 'admin', comment.createdAt]
+                ['admin', 'gsu', 'mict', 'guidance'].includes(user.role), comment.createdAt]
         );
         return sendJson(response, 201, {
-            comment: { ...comment, isAdmin: user.role === 'admin', createdAt: comment.createdAt.toISOString() }
+            comment: {
+                ...comment,
+                isAdmin: ['admin', 'gsu', 'mict', 'guidance'].includes(user.role),
+                createdAt: comment.createdAt.toISOString()
+            }
         });
     }
 
@@ -616,12 +767,18 @@ async function serveStatic(request, response, url) {
         '/index.html',
         '/admin.html',
         '/gsu.html',
+        '/stakeholder.html',
+        '/faculty.html',
         '/onboarding.html',
         '/style.css',
         '/onboarding.css',
+        '/stakeholder.css',
+        '/faculty.css',
         '/script.js',
         '/admin.js',
         '/gsu.js',
+        '/stakeholders.js',
+        '/faculty.js',
         '/onboarding.js',
         '/images/safe-logo.png'
     ]);
