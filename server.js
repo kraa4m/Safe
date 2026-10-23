@@ -38,10 +38,12 @@ const CATEGORIES = new Set([
     'Student Life',
     'Cafeteria & Dining',
     'Campus Safety',
+    'Technical Support',
+    'Guidance & Personal',
     'Technical / System',
     'Sensitive / Personal'
 ]);
-const SENSITIVE_CATEGORY = 'Sensitive / Personal';
+const SENSITIVE_CATEGORIES = new Set(['Guidance & Personal', 'Sensitive / Personal']);
 
 // One account per stakeholder office. Students self-register with the default 'user' role.
 const STAFF_ROLES = new Set(['admin', 'mict', 'guidance', 'gsu']);
@@ -53,8 +55,7 @@ const ROLE_LABELS = {
     guidance: 'Guidance Office',
     gsu: 'General Service Unit'
 };
-// Which office receives each category. School Administration can review every
-// category except Sensitive / Personal, which stays private to the Guidance Office.
+// Which office receives each category. Guidance categories are always private.
 const CATEGORY_OWNER = {
     'Facilities': 'gsu',
     'Cafeteria & Dining': 'gsu',
@@ -62,7 +63,9 @@ const CATEGORY_OWNER = {
     'Academic': 'admin',
     'Administrative': 'admin',
     'Student Life': 'admin',
+    'Technical Support': 'mict',
     'Technical / System': 'mict',
+    'Guidance & Personal': 'guidance',
     'Sensitive / Personal': 'guidance'
 };
 const STAKEHOLDER_ACCOUNTS = [
@@ -74,30 +77,30 @@ const STAKEHOLDER_ACCOUNTS = [
 
 // Dedicated pages per role. The server only serves them to the matching role.
 const ROLE_PAGES = {
-    '/faculty_view.html': 'faculty',
-    '/guidance_view.html': 'guidance'
+    '/faculty.html': 'faculty',
+    '/guidance.html': 'guidance'
 };
 
 function roleHome(user) {
-    if (user && user.role === 'faculty') return '/faculty_view.html';
-    if (user && user.role === 'guidance') return '/guidance_view.html';
+    if (user && user.role === 'faculty') return '/faculty.html';
+    if (user && user.role === 'guidance') return '/guidance.html';
+    if (user && user.role === 'admin') return '/admin.html';
+    if (user && user.role === 'gsu') return '/gsu.html';
+    if (user && user.role === 'mict') return '/stakeholder.html';
     return '/index.html';
 }
 
 function canHandle(user, category) {
     if (!user || !STAFF_ROLES.has(user.role)) return false;
-    if (user.role === 'admin') return category !== SENSITIVE_CATEGORY;
+    if (user.role === 'admin') return !SENSITIVE_CATEGORIES.has(category);
     return CATEGORY_OWNER[category] === user.role;
 }
 
 function canView(user, item) {
-    if (item.category !== SENSITIVE_CATEGORY) return true;
+    if (!item.is_confidential && !SENSITIVE_CATEGORIES.has(item.category)) return true;
     if (!user) return false;
     return item.user_id === user.id || user.role === 'guidance';
 }
-    'Technical Support',
-    'Guidance & Personal'
-]);
 
 const MIME_TYPES = {
     '.css': 'text/css; charset=utf-8',
@@ -179,6 +182,13 @@ async function requireStaff(request) {
     if (!STAFF_ROLES.has(user.role)) throw fail(403, 'Staff access is required.');
     return user;
 }
+
+async function requireAdmin(request) {
+    const user = await requireUser(request);
+    if (user.role !== 'admin') throw fail(403, 'Administrator access is required.');
+    return user;
+}
+
 async function requireGsuOrAdmin(request) {
     const user = await requireUser(request);
     if (user.role !== 'gsu' && user.role !== 'admin') {
@@ -258,8 +268,7 @@ async function serializeFeedback(item, user) {
         urgency: item.urgency || 'Normal',
         anonymous: Boolean(item.anonymous),
         mine: Boolean(user && item.user_id === user.id),
-        author: item.anonymous ? 'Anonymous' : item.author_name,
-        confidential: Boolean(item.is_confidential),
+        confidential: Boolean(item.is_confidential) || SENSITIVE_CATEGORIES.has(item.category),
         author: item.anonymous ? 'Anonymous Student' : item.author_name,
         status: item.status,
         createdAt: new Date(item.created_at).toISOString(),
@@ -382,7 +391,6 @@ async function initializeDatabase() {
     if (!commentColumns.length) {
         await pool.query('ALTER TABLE comments ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE');
     }
-    await initializeAdminAccount();
     await initializeStakeholderAccounts();
     const [confidentialColumn] = await pool.query("SHOW COLUMNS FROM feedback LIKE 'is_confidential'");
     if (!confidentialColumn.length) {
@@ -502,7 +510,9 @@ async function handleApi(request, response, url) {
             );
         } else {
             query = pool.execute(
-                "SELECT * FROM feedback WHERE category = 'Guidance & Personal' AND is_confidential = TRUE ORDER BY created_at DESC"
+                `SELECT * FROM feedback
+                 WHERE category IN ('Guidance & Personal', 'Sensitive / Personal')
+                 ORDER BY created_at DESC`
             );
         }
         const [items] = await query;
@@ -653,11 +663,6 @@ async function handleApi(request, response, url) {
         const [items] = await pool.execute('SELECT * FROM feedback ORDER BY created_at DESC');
         const visible = items.filter(item => canView(user, item));
         const feedback = await Promise.all(visible.map(item => serializeFeedback(item, user)));
-        const [items] = await pool.execute(
-            'SELECT * FROM feedback WHERE is_confidential = FALSE OR user_id = ? ORDER BY created_at DESC',
-            [user ? user.id : null]
-        );
-        const feedback = await Promise.all(items.map(item => serializeFeedback(item, user)));
         return sendJson(response, 200, { feedback });
     }
     if (request.method === 'POST' && pathname === '/api/feedback') {
@@ -667,18 +672,21 @@ async function handleApi(request, response, url) {
         const subject = validateText(body.subject, 'Subject', 100);
         const message = validateText(body.message, 'Message', 800);
         const category = validateText(body.category, 'Category', 40);
-        const urgency = body.urgency ? validateText(body.urgency, 'Urgency', 20) : 'Low';
-        const anonymous = Boolean(body.anonymous);
+        const urgency = body.urgency ? validateText(body.urgency, 'Urgency', 20) : 'Normal';
+        const anonymous = body.anonymous === true;
 
         if (!CATEGORIES.has(category)) {
             throw fail(400, 'Please select a valid feedback category.');
+        }
+        if (!['Normal', 'High', 'Critical'].includes(urgency)) {
+            throw fail(400, 'Choose a valid urgency level.');
         }
         if (user.role === 'faculty' && !['Academic', 'Administrative'].includes(category)) {
             throw fail(403, 'Faculty accounts can submit Academic or Administrative feedback only.');
         }
         const id = randomUUID();
         const createdAt = new Date();
-        const confidential = category === 'Guidance & Personal';
+        const confidential = SENSITIVE_CATEGORIES.has(category);
 
         await pool.execute(
             `INSERT INTO feedback (id, user_id, author_name, anonymous, subject, message, category, urgency, status, is_confidential, created_at)
@@ -695,28 +703,16 @@ async function handleApi(request, response, url) {
     if (request.method === 'GET' && pathname === '/api/admin/feedback') {
         const user = await requireStaff(request);
         const [items] = await pool.execute('SELECT * FROM feedback ORDER BY created_at DESC');
-        const mine = items.filter(item => canHandle(user, item.category));
+        const mine = items.filter(item => user.role === 'guidance'
+            ? SENSITIVE_CATEGORIES.has(item.category)
+            : !item.is_confidential && canHandle(user, item.category));
         const feedback = await Promise.all(mine.map(item => serializeFeedback(item, user)));
-        return sendJson(response, 200, { feedback });
-    }
-
-    const adminStatusMatch = pathname.match(/^\/api\/admin\/feedback\/([0-9a-f-]+)\/status$/i);
-    if (request.method === 'PATCH' && adminStatusMatch) {
-        const staff = await requireStaff(request);
-        const user = await requireAdmin(request);
-        const [items] = await pool.execute(
-            'SELECT * FROM feedback WHERE is_confidential = FALSE ORDER BY created_at DESC'
-        );
-        const feedback = await Promise.all(items.map(item => serializeFeedback(item, user)));
         return sendJson(response, 200, { feedback });
     }
 
     const statusMatch = pathname.match(/^\/api\/(?:admin|gsu|stakeholder)\/feedback\/([0-9a-f-]+)\/status$/i);
     if (request.method === 'PATCH' && statusMatch) {
         const user = await requireUser(request);
-        if (!['admin', 'gsu', 'mict', 'guidance'].includes(user.role)) {
-            throw fail(403, 'Stakeholder access is required to update report status.');
-        }
         if (pathname.startsWith('/api/admin/') && user.role !== 'admin') {
             throw fail(403, 'Administrator access is required.');
         }
@@ -726,18 +722,12 @@ async function handleApi(request, response, url) {
         if (pathname.startsWith('/api/stakeholder/') && !['mict', 'guidance', 'admin'].includes(user.role)) {
             throw fail(403, 'Stakeholder access is required.');
         }
+
         const body = await readJson(request);
         const status = validateText(body.status, 'Status', 40);
-    
         if (!['Just Submitted', 'Under Review', 'In Progress', 'Approved', 'Resolved', 'Rejected'].includes(status)) {
             throw fail(400, 'Choose a valid report status.');
         }
-        const [target] = await pool.execute('SELECT category FROM feedback WHERE id = ?', [adminStatusMatch[1]]);
-        if (!target.length) throw fail(404, 'Feedback not found.');
-        if (!canHandle(staff, target[0].category)) {
-            throw fail(403, 'This report is handled by a different office.');
-        }
-        await pool.execute(
 
         const [items] = await pool.execute(
             'SELECT category, is_confidential FROM feedback WHERE id = ?',
@@ -745,63 +735,21 @@ async function handleApi(request, response, url) {
         );
         if (!items.length) throw fail(404, 'Feedback not found.');
         const item = items[0];
-        const allowedCategories = {
-            gsu: ['Facilities', 'Cafeteria & Dining', 'Campus Safety'],
-            mict: ['Technical Support'],
-            guidance: ['Guidance & Personal']
-        };
         if (item.is_confidential && user.role !== 'guidance') {
             throw fail(403, 'Confidential Guidance reports can only be managed by the Guidance Office.');
         }
-        if (user.role !== 'admin' &&
-            (!allowedCategories[user.role] || !allowedCategories[user.role].includes(item.category) ||
-                (user.role === 'guidance' && !item.is_confidential))) {
+        if (!canHandle(user, item.category) ||
+            (user.role === 'guidance' && !SENSITIVE_CATEGORIES.has(item.category))) {
             throw fail(403, 'Your account cannot manage reports in this category.');
         }
-    
-        const [result] = await pool.execute(
+
+        await pool.execute(
             'UPDATE feedback SET status = ? WHERE id = ?',
             [status, statusMatch[1]]
         );
-        return sendJson(response, 200, { id: adminStatusMatch[1], status });
-    }
-
-    if (request.method === 'POST' && pathname === '/api/feedback') {
-        const user = await requireUser(request);
-        const body = await readJson(request);
-        const subject = validateText(body.subject, 'Subject', 100);
-        const message = validateText(body.message, 'Feedback', 800);
-        if (!CATEGORIES.has(body.category)) throw fail(400, 'Choose a valid feedback category.');
-        const urgency = body.urgency === undefined ? 'Normal' : body.urgency;
-        if (!['Normal', 'High', 'Critical'].includes(urgency)) {
-            throw fail(400, 'Choose a valid urgency level.');
-        }
-        const item = {
-            id: randomUUID(),
-            user_id: user.id,
-            subject,
-            message,
-            category: body.category,
-            urgency,
-            anonymous: body.anonymous === true,
-            author_name: user.name,
-            status: 'Just Submitted',
-            created_at: new Date()
-        };
-        await pool.execute(
-            `INSERT INTO feedback
-             (id, user_id, author_name, anonymous, subject, message, category, urgency, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [item.id, user.id, item.author_name, item.anonymous, item.subject, item.message,
-                item.category, item.urgency, item.status, item.created_at]
-        );
-        return sendJson(response, 201, { feedback: await serializeFeedback(item, user) });
-    }
-
-    
-        if (!result.affectedRows) throw fail(404, 'Feedback not found.');
         return sendJson(response, 200, { id: statusMatch[1], status });
     }
+
     const voteMatch = pathname.match(/^\/api\/feedback\/([0-9a-f-]+)\/vote$/i);
     if (request.method === 'POST' && voteMatch) {
         const user = await requireUser(request);
@@ -810,15 +758,12 @@ async function handleApi(request, response, url) {
         try {
             await connection.beginTransaction();
             const [items] = await connection.execute(
-                'SELECT id, user_id, category FROM feedback WHERE id = ? FOR UPDATE',
+                'SELECT id, category, is_confidential FROM feedback WHERE id = ? FOR UPDATE',
                 [voteMatch[1]]
             );
-            if (!items.length || !canView(user, items[0])) throw fail(404, 'Feedback not found.');
-                'SELECT id, is_confidential FROM feedback WHERE id = ? FOR UPDATE',
-                [voteMatch[1]]
-            );
-            if (!items.length) throw fail(404, 'Feedback not found.');
-            if (items[0].is_confidential) throw fail(404, 'Feedback not found.');
+            if (!items.length || items[0].is_confidential || SENSITIVE_CATEGORIES.has(items[0].category)) {
+                throw fail(404, 'Feedback not found.');
+            }
             const [existing] = await connection.execute(
                 'SELECT user_id FROM votes WHERE feedback_id = ? AND user_id = ?',
                 [voteMatch[1], user.id]
@@ -852,19 +797,11 @@ async function handleApi(request, response, url) {
     const commentsMatch = pathname.match(/^\/api\/feedback\/([0-9a-f-]+)\/comments$/i);
     if (commentsMatch && request.method === 'GET') {
         const viewer = await getUser(request);
-        const [items] = await pool.execute('SELECT id, user_id, category FROM feedback WHERE id = ?', [commentsMatch[1]]);
-        if (!items.length || !canView(viewer, items[0])) throw fail(404, 'Feedback not found.');
         const [items] = await pool.execute(
-            'SELECT id, user_id, is_confidential FROM feedback WHERE id = ?',
+            'SELECT id, user_id, category, is_confidential FROM feedback WHERE id = ?',
             [commentsMatch[1]]
         );
-        if (!items.length) throw fail(404, 'Feedback not found.');
-        if (items[0].is_confidential) {
-            const user = await requireUser(request);
-            if (user.role !== 'guidance' && user.id !== items[0].user_id) {
-                throw fail(404, 'Feedback not found.');
-            }
-        }
+        if (!items.length || !canView(viewer, items[0])) throw fail(404, 'Feedback not found.');
         const [comments] = await pool.execute(
             `SELECT id, author_name AS authorName, message, is_admin AS isAdmin, created_at AS createdAt
              FROM comments WHERE feedback_id = ? ORDER BY created_at ASC`,
@@ -881,19 +818,12 @@ async function handleApi(request, response, url) {
 
     if (commentsMatch && request.method === 'POST') {
         const user = await requireUser(request);
-        const [items] = await pool.execute('SELECT id, user_id, category FROM feedback WHERE id = ?', [commentsMatch[1]]);
-        if (!items.length || !canView(user, items[0])) throw fail(404, 'Feedback not found.');
-        // Official reply only when the report belongs to the commenter's office.
-        const isOfficial = canHandle(user, items[0].category);
         const [items] = await pool.execute(
-            'SELECT id, user_id, is_confidential FROM feedback WHERE id = ?',
+            'SELECT id, user_id, category, is_confidential FROM feedback WHERE id = ?',
             [commentsMatch[1]]
         );
-        if (!items.length) throw fail(404, 'Feedback not found.');
-        if (items[0].is_confidential &&
-            user.role !== 'guidance' && user.id !== items[0].user_id) {
-            throw fail(404, 'Feedback not found.');
-        }
+        if (!items.length || !canView(user, items[0])) throw fail(404, 'Feedback not found.');
+        const isOfficial = canHandle(user, items[0].category);
         const body = await readJson(request);
         const message = validateText(body.message, 'Comment', 500);
         const comment = {
@@ -910,14 +840,6 @@ async function handleApi(request, response, url) {
         );
         return sendJson(response, 201, {
             comment: { ...comment, isAdmin: isOfficial, createdAt: comment.createdAt.toISOString() }
-                ['admin', 'gsu', 'mict', 'guidance'].includes(user.role), comment.createdAt]
-        );
-        return sendJson(response, 201, {
-            comment: {
-                ...comment,
-                isAdmin: ['admin', 'gsu', 'mict', 'guidance'].includes(user.role),
-                createdAt: comment.createdAt.toISOString()
-            }
         });
     }
 
@@ -939,20 +861,19 @@ async function serveStatic(request, response, url) {
         '/stakeholder.html',
         '/faculty.html',
         '/onboarding.html',
-        '/faculty_view.html',
-        '/guidance_view.html',
+        '/guidance.html',
         '/style.css',
         '/onboarding.css',
         '/stakeholder.css',
         '/faculty.css',
+        '/guidance.css',
         '/script.js',
         '/admin.js',
         '/gsu.js',
         '/stakeholders.js',
         '/faculty.js',
         '/onboarding.js',
-        '/faculty_view.js',
-        '/guidance_view.js',
+        '/guidance.js',
         '/images/safe-logo.png'
     ]);
     if (!allowedFiles.has(pathname)) return sendJson(response, 404, { error: 'File not found.' });
@@ -1018,11 +939,8 @@ initializeDatabase().then(() => {
         console.log(`CSPC S.A.F.E. server listening on http://localhost:${PORT}`);
         console.log(`Connected to MySQL database "${DB_NAME}" at ${DB_HOST}:${DB_PORT}`);
     });
-}).catch(error => {
-    console.error(
-        `Unable to connect to XAMPP MySQL at ${DB_HOST}:${DB_PORT}. ` +
-        'Start MySQL in the XAMPP Control Panel and check DB_HOST, DB_PORT, DB_USER, and DB_PASSWORD.'
-    );
-    console.error(error);
+}).catch(async error => {
+    console.error('Unable to initialize S.A.F.E.:', error);
+    if (pool) await pool.end();
     process.exitCode = 1;
 });

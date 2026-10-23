@@ -24,13 +24,19 @@ DB_NAME=cspc_safe
 PORT=3000
 ADMIN_EMAIL=
 ADMIN_PASSWORD=
+FACULTY_EMAIL=faculty@cspc.edu.ph
+FACULTY_PASSWORD=
+MICT_EMAIL=mict@cspc.edu.ph
+MICT_PASSWORD=
+GUIDANCE_EMAIL=guidance@cspc.edu.ph
+GUIDANCE_PASSWORD=
 GSU_EMAIL=
 GSU_PASSWORD=
 ```
 
-Set both `ADMIN_EMAIL` and `ADMIN_PASSWORD` to bootstrap the administrator account; the password must be at least 12 characters. Restart the server and sign in with those credentials. Administrators can then create Faculty, GSU, MICT & ICTU, and Guidance Office accounts from the Stakeholder Accounts section of the Admin Dashboard. Enter the stakeholder's name, sign-in email, role, and an initial password of at least 12 characters, then share those credentials securely. The password is never shown again after creation. Faculty sign in to a separate portal to submit Academic and Administrative feedback and track their reports. MICT & ICTU can manage Technical Support reports. The Guidance Office can manage confidential Guidance & Personal submissions; these are excluded from public, GSU, and administrator feedback lists and are visible only to the submitter and Guidance. Role checks are enforced by the API as well as the interface.
+Set each account's email and password together to provision it at startup. The supported prefixes are `ADMIN`, `FACULTY`, `MICT`, `GUIDANCE`, and `GSU`; passwords must be at least 12 characters. The stakeholder email defaults shown above can be changed. These settings provision or update one account per role, so keep the passwords stable between restarts. Copy `.env.example` to `.env`, set unique credentials, and keep `.env` private; never commit real passwords. Administrators can also create stakeholder accounts from the Admin Dashboard. Faculty submit Academic and Administrative feedback and track their reports. MICT & ICTU manages Technical Support reports. The Guidance Office manages confidential Guidance & Personal submissions; they are excluded from public, GSU, and administrator feedback lists and are visible only to the submitter and Guidance. Role checks are enforced by the API as well as the interface.
 
-`GSU_EMAIL` and `GSU_PASSWORD` remain optional for deployments that provision a GSU account at startup; accounts created by an administrator do not require these settings. The database startup migration adds the confidential-feedback flag to existing installations. Selecting the Guidance & Personal category automatically makes a submission private.
+Leave a role's email and password blank to provision that account through the Admin Dashboard instead. The database startup migration adds the confidential-feedback flag to existing installations. Selecting the Guidance & Personal category automatically makes a submission private.
 
 You can also open phpMyAdmin at [http://localhost/phpmyadmin](http://localhost/phpmyadmin) to inspect the database and tables. The MySQL account needs permission to create the database and tables. Passwords are stored as salted scrypt hashes; session tokens are stored as hashes. Do not expose this development server directly to the public internet; deploy behind HTTPS and use production-grade database credentials and configuration.
 
