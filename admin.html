@@ -4,25 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>S.A.F.E. - Administration Portal</title>
-    <!-- Google Font: Inter -->
+    
+    <!-- Hide body initially -->
+    <style>
+        body { display: none; }
+    </style>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Existing Shared CSS -->
     <link rel="stylesheet" href="style.css">
 
-    <!-- Immediate Route Guard for Admin Privilege -->
+    <!-- Route Guard Script -->
     <script>
         (async function checkAdminAuth() {
             try {
                 const res = await fetch('/api/auth/me', { headers: { 'Accept': 'application/json' } });
                 if (!res.ok) throw new Error('Unauthenticated');
                 const data = await res.json();
+                
                 if (!data.user || data.user.role !== 'admin') {
                     alert('Access Denied: Administrator privileges required.');
                     window.location.assign('index.html');
+                } else {
+                    const revealBody = () => {
+                        if (document.body) document.body.style.display = 'block';
+                    };
+
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', revealBody);
+                    } else {
+                        revealBody();
+                    }
                 }
             } catch (err) {
                 window.location.assign('onboarding.html');
@@ -79,11 +93,6 @@
                         </div>
                     </div>
                     <div class="profile-dropdown-links">
-                        <a href="index.html" class="dropdown-link">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-                            View Student Portal
-                        </a>
-                        <div class="dropdown-divider"></div>
                         <button class="dropdown-link text-danger" id="logoutBtn">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                             Sign Out
@@ -119,12 +128,6 @@
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                     </span>
                     <span class="nav-label">Analytics Overview</span>
-                </a>
-                <a href="index.html" class="nav-item">
-                    <span class="nav-icon-box">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                    </span>
-                    <span class="nav-label">Student View</span>
                 </a>
             </nav>
 
@@ -271,7 +274,7 @@
                     <span class="modal-subtitle">Post official administrative updates to students</span>
                 </div>
                 <button type="button" class="modal-close-btn" id="closeCommentsModalBtn">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="18" x2="18" y2="18"/></svg>
                 </button>
             </div>
             <div class="modal-body">
