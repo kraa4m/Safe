@@ -18,9 +18,11 @@ const FEEDBACK_CATEGORIES = [
     'Administrative',
     'Student Life',
     'Cafeteria & Dining',
-    'Campus Safety'
+    'Campus Safety',
+    'Technical Support',
+    'Guidance & Personal'
 ];
-const CATEGORY_COLORS = ['#2563eb', '#f59e0b', '#0d9488', '#334155', '#0284c7', '#8b5cf6'];
+const CATEGORY_COLORS = ['#2563eb', '#f59e0b', '#0d9488', '#334155', '#0284c7', '#8b5cf6', '#64748b', '#db2777'];
 
 async function apiRequest(path, options = {}) {
     const response = await fetch(path, {
@@ -786,6 +788,7 @@ function initFeedbackForms() {
     const subjectInput = document.getElementById('subjectInput');
     const feedbackText = document.getElementById('feedbackText');
     const categorySelect = document.getElementById('categorySelect');
+    const dashboardAnonymous = document.getElementById('dashboardAnonymous');
     const dashCharCounter = document.getElementById('dashCharCounter');
 
     if (feedbackText && dashCharCounter) {
@@ -812,13 +815,19 @@ function initFeedbackForms() {
             try {
                 const { feedback } = await apiRequest('/api/feedback', {
                     method: 'POST',
-                    body: JSON.stringify({ subject, message: text, category })
+                    body: JSON.stringify({
+                        subject,
+                        message: text,
+                        category,
+                        anonymous: dashboardAnonymous.checked
+                    })
                 });
                 addNewFeedback(feedback);
                 subjectInput.value = '';
                 feedbackText.value = '';
                 dashCharCounter.textContent = '0 / 400';
                 categorySelect.value = 'Facilities';
+                dashboardAnonymous.checked = false;
                 localStorage.removeItem('safe_cspc_draft');
                 localStorage.removeItem('schoolvoice_draft');
                 triggerConfetti();
@@ -957,6 +966,9 @@ function addNewFeedback(feedback, renderOnly = false) {
     const safeMessage = escapeHtml(message);
     const safeCategory = escapeHtml(category);
     const safeAuthor = escapeHtml(author);
+    const privateBadge = feedback.confidential
+        ? '<span class="stakeholder-private-badge">Private to you and Guidance</span>'
+        : '';
     const voteState = voted ? 'voted' : '';
     const voteCount = Number(votes) || 0;
     const comments = Number(commentCount) || 0;
@@ -972,6 +984,7 @@ function addNewFeedback(feedback, renderOnly = false) {
             <div class="suggestion-content">
                 <div class="badge-row">
                     <span class="tag-badge">${safeCategory}</span>
+                    ${privateBadge}
                 </div>
                 <h3 class="suggestion-title">${safeSubject}</h3>
                 <p class="suggestion-snippet">${safeMessage}</p>
@@ -1012,6 +1025,7 @@ function addNewFeedback(feedback, renderOnly = false) {
             <div class="card-main-col">
                 <div class="item-meta-row">
                     <span class="tag-badge">${safeCategory}</span>
+                    ${privateBadge}
                     <span class="status-pill ${getFeedbackStatusClass(status)}">${escapeHtml(status)}</span>
                     <span class="post-time">${new Date(feedback.createdAt).toLocaleString()}</span>
                 </div>
@@ -1183,7 +1197,7 @@ function initSuggestionsFilter() {
 
             items.forEach(item => {
                 const category = item.getAttribute('data-category') || '';
-                if (filterValue === 'all' || category.toLowerCase().includes(filterValue.toLowerCase())) {
+                if (filterValue === 'all' || category === filterValue) {
                     item.style.display = 'flex';
                     visibleCount++;
                 } else {

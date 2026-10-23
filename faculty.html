@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.A.F.E. - Faculty Portal</title>
+    <style>body { display: none; }</style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="stakeholder.css">
+    <link rel="stylesheet" href="faculty.css">
+    <script>
+        let facultyRouteChanging = false;
+        function leaveFacultyPortal(path) {
+            facultyRouteChanging = true;
+            window.location.replace(path);
+        }
+        async function checkFacultyAuth() {
+            try {
+                const response = await fetch('/api/auth/me', { cache: 'no-store' });
+                if (!response.ok) throw new Error('Unauthenticated');
+                const { user } = await response.json();
+                if (!user) {
+                    leaveFacultyPortal('onboarding.html');
+                    return;
+                }
+                if (user.role !== 'faculty') {
+                    const destinations = {
+                        admin: 'admin.html',
+                        gsu: 'gsu.html',
+                        mict: 'stakeholder.html',
+                        guidance: 'stakeholder.html',
+                        user: 'index.html'
+                    };
+                    leaveFacultyPortal(destinations[user.role] || 'onboarding.html');
+                    return;
+                }
+                const revealBody = () => { document.body.style.display = 'block'; };
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', revealBody, { once: true });
+                } else {
+                    revealBody();
+                }
+            } catch {
+                leaveFacultyPortal('onboarding.html');
+            }
+        }
+        checkFacultyAuth();
+        window.addEventListener('pageshow', checkFacultyAuth);
+        window.addEventListener('pagehide', () => {
+            if (!facultyRouteChanging) navigator.sendBeacon('/api/auth/logout');
+        });
+    </script>
+</head>
+<body>
+    <header class="top-header stakeholder-header">
+        <a href="faculty.html" class="header-logo-card" aria-label="CSPC S.A.F.E. Faculty Portal">
+            <img src="images/safe-logo.png" alt="CSPC S.A.F.E." class="header-logo-img">
+        </a>
+        <div class="stakeholder-header-title">
+            <span class="sidebar-heading">Faculty Portal</span>
+            <span>Academic &amp; administrative feedback</span>
+        </div>
+        <div class="header-actions">
+            <button type="button" class="header-action-btn" id="facultyThemeToggle" aria-label="Toggle theme">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 0 18V3z"/></svg>
+            </button>
+            <div class="stakeholder-account">
+                <strong id="facultyName"></strong>
+                <span id="facultyEmail"></span>
+            </div>
+            <button type="button" class="btn btn-secondary stakeholder-logout" id="facultyLogout">Sign out</button>
+        </div>
+    </header>
+
+    <main class="faculty-main">
+        <section class="faculty-welcome">
+            <span class="stakeholder-eyebrow">FACULTY</span>
+            <h1>Make your voice part of campus improvement.</h1>
+            <p>Submit feedback about academic and administrative processes, then follow each report through its resolution.</p>
+        </section>
+
+        <section class="stakeholder-stats faculty-stats" aria-label="Your submission summary">
+            <article class="card stakeholder-stat">
+                <span>Total submissions</span>
+                <strong id="facultyTotal">0</strong>
+            </article>
+            <article class="card stakeholder-stat">
+                <span>Awaiting review</span>
+                <strong id="facultyPending">0</strong>
+            </article>
+            <article class="card stakeholder-stat">
+                <span>In progress</span>
+                <strong id="facultyProgress">0</strong>
+            </article>
+            <article class="card stakeholder-stat">
+                <span>Resolved</span>
+                <strong id="facultyResolved">0</strong>
+            </article>
+        </section>
+
+        <div class="faculty-layout">
+            <section class="card faculty-compose">
+                <div class="faculty-section-heading">
+                    <span class="stakeholder-eyebrow">NEW SUBMISSION</span>
+                    <h2>Share feedback</h2>
+                    <p>Submissions are routed to the appropriate office for review.</p>
+                </div>
+                <form id="facultyFeedbackForm">
+                    <label class="form-label" for="facultySubject">Subject</label>
+                    <input class="form-control" id="facultySubject" maxlength="100" placeholder="Briefly describe the issue or idea" required>
+                    <label class="form-label" for="facultyCategory">Process area</label>
+                    <select class="form-control form-select" id="facultyCategory" required>
+                        <option value="Academic">Academic processes</option>
+                        <option value="Administrative">Administrative processes</option>
+                    </select>
+                    <label class="form-label" for="facultyMessage">Details</label>
+                    <textarea class="form-control faculty-message" id="facultyMessage" maxlength="800" placeholder="Share useful context and a suggested improvement..." required></textarea>
+                    <label class="checkbox-container faculty-anonymous">
+                        <input type="checkbox" id="facultyAnonymous">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Submit anonymously</span>
+                    </label>
+                    <button class="btn btn-primary" type="submit" id="facultySubmitBtn">Submit feedback</button>
+                </form>
+            </section>
+
+            <section class="card faculty-history">
+                <div class="faculty-history-heading">
+                    <div>
+                        <span class="stakeholder-eyebrow">YOUR REPORTS</span>
+                        <h2>Submission history</h2>
+                    </div>
+                    <label class="faculty-status-filter" for="facultyStatusFilter">
+                        Filter by status
+                        <select class="form-control form-select" id="facultyStatusFilter">
+                            <option value="all">All statuses</option>
+                            <option>Just Submitted</option>
+                            <option>Under Review</option>
+                            <option>In Progress</option>
+                            <option>Approved</option>
+                            <option>Resolved</option>
+                            <option>Rejected</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="faculty-report-list" id="facultyReportList" aria-live="polite"></div>
+                <div class="stakeholder-empty" id="facultyEmpty" hidden>
+                    <h3>No submissions yet</h3>
+                    <p>Your reports and their status updates will appear here.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div class="stakeholder-toast" id="facultyToast" role="status" aria-live="polite"></div>
+    <script src="faculty.js" defer></script>
+</body>
+</html>

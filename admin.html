@@ -143,6 +143,12 @@
                     </span>
                     <span class="nav-label">Analytics Overview</span>
                 </a>
+                <a href="#accounts" class="nav-item" data-page="accounts">
+                    <span class="nav-icon-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M17 11a4 4 0 1 0-2-7"/><path d="M3 21v-2a6 6 0 0 1 12 0v2"/><path d="M19 14a5 5 0 0 1 2 4v3"/></svg>
+                    </span>
+                    <span class="nav-label">Stakeholder Accounts</span>
+                </a>
             </nav>
 
             <div class="sidebar-footer">
@@ -163,7 +169,7 @@
             <main class="dashboard-content">
 
                 <!-- Summary Stat Cards -->
-                <div class="stats-cards-grid">
+                <div class="stats-cards-grid" id="adminReportSummary">
                     <div class="card stat-card">
                         <div class="stat-header">
                             <span class="stat-label">Total Submissions</span>
@@ -231,6 +237,7 @@
                                 <option value="Student Life">Student Life</option>
                                 <option value="Cafeteria & Dining">Cafeteria & Dining</option>
                                 <option value="Campus Safety">Campus Safety</option>
+                                <option value="Technical Support">Technical Support</option>
                             </select>
                         </div>
                     </div>
@@ -248,7 +255,7 @@
                 </section>
 
                 <!-- VIEW 2: ANALYTICS OVERVIEW -->
-                <section class="view-panel" id="view-analytics" style="display: none;">
+                <section class="view-panel" id="view-analytics">
                     <div class="view-header">
                         <h2>Analytics Breakdown</h2>
                         <p class="view-subtitle">Distribution of campus suggestions across departments and current completion status.</p>
@@ -272,6 +279,56 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <section class="view-panel" id="view-accounts">
+                    <div class="view-header">
+                        <h2>Stakeholder Accounts</h2>
+                        <p class="view-subtitle">Create Faculty, GSU, MICT &amp; ICTU, and Guidance Office sign-in accounts.</p>
+                    </div>
+                    <div class="stakeholder-account-layout">
+                        <section class="card stakeholder-account-form-card">
+                            <div class="stakeholder-account-heading">
+                                <span class="stakeholder-eyebrow">ACCOUNT ACCESS</span>
+                                <h3>Create stakeholder account</h3>
+                                <p>Set up a secure sign-in for a campus office or faculty member.</p>
+                            </div>
+                            <form id="stakeholderAccountForm" class="stakeholder-account-form">
+                                <label class="form-label" for="stakeholderName">Full name</label>
+                                <input class="form-control" id="stakeholderName" name="name" maxlength="100" required>
+                                <label class="form-label" for="stakeholderEmail">Sign-in email</label>
+                                <input class="form-control" id="stakeholderEmail" name="email" type="email" maxlength="254" required>
+                                <label class="form-label" for="stakeholderRole">Stakeholder role</label>
+                                <select class="form-control form-select" id="stakeholderRole" name="role" required>
+                                    <option value="faculty">Faculty</option>
+                                    <option value="gsu">General Service Unit</option>
+                                    <option value="mict">MICT &amp; ICTU</option>
+                                    <option value="guidance">Guidance Office</option>
+                                </select>
+                                <p class="stakeholder-role-hint" id="stakeholderRoleHint">Faculty accounts can submit academic and administrative feedback.</p>
+                                <label class="form-label" for="stakeholderPassword">Temporary password</label>
+                                <input class="form-control" id="stakeholderPassword" name="password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+                                <p class="stakeholder-password-hint">Use at least 12 characters. The account holder can sign in with this password.</p>
+                                <button class="btn btn-primary" type="submit" id="createStakeholderButton">Create stakeholder account</button>
+                                <p id="stakeholderAccountStatus" class="stakeholder-account-status" role="status" aria-live="polite"></p>
+                            </form>
+                        </section>
+
+                        <section class="card stakeholder-account-list-card">
+                            <div class="stakeholder-account-list-heading">
+                                <div class="stakeholder-account-heading">
+                                    <span class="stakeholder-eyebrow">ACCESS ROSTER</span>
+                                    <h3>Stakeholder accounts</h3>
+                                    <p>Account passwords are not displayed.</p>
+                                </div>
+                                <button class="btn btn-secondary stakeholder-refresh-button" id="refreshStakeholdersButton" type="button">
+                                    Refresh list
+                                </button>
+                            </div>
+                            <div id="stakeholderAccountCount" class="stakeholder-account-count"></div>
+                            <div id="stakeholderAccountList" class="stakeholder-account-list" aria-live="polite" aria-busy="true"></div>
+                        </section>
                     </div>
                 </section>
 

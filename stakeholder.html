@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.A.F.E. - Stakeholder Portal</title>
+    <style>body { display: none; }</style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="stakeholder.css">
+    <script>
+        let stakeholderRouteChanging = false;
+        function leaveStakeholderPortal(path) {
+            stakeholderRouteChanging = true;
+            window.location.replace(path);
+        }
+        async function checkStakeholderAuth() {
+            try {
+                const response = await fetch('/api/auth/me', { cache: 'no-store' });
+                if (!response.ok) throw new Error('Unauthenticated');
+                const { user } = await response.json();
+                if (!user) {
+                    leaveStakeholderPortal('onboarding.html');
+                    return;
+                }
+                if (user.role === 'admin' || user.role === 'gsu' || user.role === 'user') {
+                    leaveStakeholderPortal(user.role === 'admin' ? 'admin.html' : user.role === 'gsu' ? 'gsu.html' : 'index.html');
+                    return;
+                }
+                if (user.role === 'faculty') {
+                    leaveStakeholderPortal('faculty.html');
+                    return;
+                }
+                if (!['mict', 'guidance'].includes(user.role)) {
+                    leaveStakeholderPortal('onboarding.html');
+                    return;
+                }
+                const revealBody = () => {
+                    document.body.style.display = 'block';
+                };
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', revealBody, { once: true });
+                } else {
+                    revealBody();
+                }
+            } catch {
+                leaveStakeholderPortal('onboarding.html');
+            }
+        }
+        checkStakeholderAuth();
+        window.addEventListener('pageshow', checkStakeholderAuth);
+        window.addEventListener('pagehide', () => {
+            if (!stakeholderRouteChanging) navigator.sendBeacon('/api/auth/logout');
+        });
+    </script>
+</head>
+<body>
+    <header class="top-header stakeholder-header">
+        <a href="stakeholder.html" class="header-logo-card" aria-label="CSPC S.A.F.E. home">
+            <img src="images/safe-logo.png" alt="CSPC S.A.F.E." class="header-logo-img">
+        </a>
+        <div class="stakeholder-header-title">
+            <span class="sidebar-heading">Stakeholder Portal</span>
+            <span id="portalSubtitle">Feedback and issue management</span>
+        </div>
+        <div class="header-actions">
+            <button type="button" class="header-action-btn" id="themeToggleBtn" aria-label="Toggle theme">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 0 18V3z"/></svg>
+            </button>
+            <div class="stakeholder-account">
+                <strong id="accountName">CSPC Stakeholder</strong>
+                <span id="accountEmail"></span>
+            </div>
+            <button type="button" class="btn btn-secondary stakeholder-logout" id="logoutBtn">Sign out</button>
+        </div>
+    </header>
+
+    <main class="stakeholder-main">
+        <section class="stakeholder-welcome">
+            <div>
+                <span class="stakeholder-eyebrow" id="roleLabel">STAKEHOLDER</span>
+                <h1 id="welcomeTitle">Welcome to S.A.F.E.</h1>
+                <p id="welcomeDescription">Review submissions assigned to your office.</p>
+            </div>
+            <button type="button" class="btn btn-secondary stakeholder-refresh" id="refreshBtn">Refresh</button>
+        </section>
+
+        <section class="stakeholder-stats" aria-label="Submission summary">
+            <article class="card stakeholder-stat">
+                <span id="totalLabel">Assigned submissions</span>
+                <strong id="totalCount">0</strong>
+            </article>
+            <article class="card stakeholder-stat">
+                <span>Awaiting review</span>
+                <strong id="pendingCount">0</strong>
+            </article>
+            <article class="card stakeholder-stat">
+                <span>In progress</span>
+                <strong id="progressCount">0</strong>
+            </article>
+            <article class="card stakeholder-stat">
+                <span>Resolved</span>
+                <strong id="resolvedCount">0</strong>
+            </article>
+        </section>
+
+        <section class="stakeholder-content">
+            <section class="card stakeholder-list-card">
+                <div class="stakeholder-section-heading">
+                    <div>
+                        <span class="stakeholder-eyebrow" id="listEyebrow">WORK QUEUE</span>
+                        <h2 id="listTitle">Assigned submissions</h2>
+                    </div>
+                    <label class="stakeholder-filter-label" for="statusFilter">
+                        Status
+                        <select class="form-control form-select" id="statusFilter">
+                            <option value="all">All statuses</option>
+                            <option>Just Submitted</option>
+                            <option>Under Review</option>
+                            <option>In Progress</option>
+                            <option>Approved</option>
+                            <option>Resolved</option>
+                            <option>Rejected</option>
+                        </select>
+                    </label>
+                </div>
+                <div id="feedbackList" class="stakeholder-feedback-list" aria-live="polite"></div>
+                <div class="stakeholder-empty" id="emptyState" hidden>
+                    <h3>No submissions to show</h3>
+                    <p id="emptyDescription">Assigned submissions will appear here.</p>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <dialog class="stakeholder-dialog" id="replyDialog" aria-labelledby="replyTitle">
+        <form method="dialog" class="stakeholder-dialog-header">
+            <div>
+                <span class="stakeholder-eyebrow">OFFICE RESPONSE</span>
+                <h2 id="replyTitle">Report discussion</h2>
+            </div>
+            <button class="header-action-btn" aria-label="Close replies">×</button>
+        </form>
+        <div id="replyList" class="stakeholder-replies"></div>
+        <form id="replyForm" class="stakeholder-reply-form">
+            <label class="form-label" for="replyMessage">Post an official reply</label>
+            <textarea class="form-control" id="replyMessage" maxlength="500" required></textarea>
+            <button class="btn btn-primary" type="submit">Post reply</button>
+        </form>
+    </dialog>
+
+    <div class="stakeholder-toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="stakeholders.js" defer></script>
+</body>
+</html>
