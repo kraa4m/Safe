@@ -27,6 +27,7 @@ const SVG_MOON = '<svg class="theme-icon" viewBox="0 0 24 24" width="18" height=
 let cases = [];
 let activeCommentFeedbackId = null;
 let toastTimer = null;
+let activeGuidanceView = 'dashboard';
 
 async function apiRequest(path, options = {}) {
     const response = await fetch(path, {
@@ -59,6 +60,7 @@ function showToast(message, duration = 3200) {
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
     initDropdown();
+    initGuidanceNavigation();
     initFilters();
     initCaseActions();
     initCommentsModal();
@@ -108,6 +110,8 @@ function renderProfile(user) {
     set('profileDisplayName', user.name);
     set('profileDisplayEmail', user.email);
     set('profileDepartment', user.department || 'Guidance Office');
+    set('sidebarDisplayName', user.name);
+    set('sidebarDisplayRole', user.department || 'Guidance Office');
     const name = document.getElementById('settingName');
     const email = document.getElementById('settingEmail');
     const dept = document.getElementById('settingDept');
@@ -164,6 +168,72 @@ function closeDropdown() {
     document.getElementById('userProfileBtn')?.setAttribute('aria-expanded', 'false');
 }
 
+/* ---------- Guidance navigation ---------- */
+function initGuidanceNavigation() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggleBtn');
+    const closeBtn = document.getElementById('sidebarCloseBtn');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const nav = sidebar?.querySelector('.sidebar-nav');
+    if (!sidebar || !nav) return;
+
+    const closeSidebar = () => {
+        sidebar.classList.remove('open');
+        backdrop?.classList.remove('active');
+        toggleBtn?.classList.remove('active');
+        toggleBtn?.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('sidebar-open');
+    };
+    const openSidebar = () => {
+        sidebar.classList.add('open');
+        backdrop?.classList.add('active');
+        toggleBtn?.classList.add('active');
+        toggleBtn?.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('sidebar-open');
+    };
+
+    toggleBtn?.addEventListener('click', () => {
+        if (sidebar.classList.contains('open')) closeSidebar();
+        else openSidebar();
+    });
+    closeBtn?.addEventListener('click', closeSidebar);
+    backdrop?.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') closeSidebar();
+    });
+
+    nav.querySelectorAll('[data-guidance-view]').forEach(link => {
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            const view = link.dataset.guidanceView;
+            if (!['dashboard', 'all', 'new', 'urgent', 'resolved'].includes(view)) return;
+            activeGuidanceView = view;
+            setActiveGuidanceNavigation(view);
+            document.getElementById('caseSearch').value = '';
+            document.getElementById('statusFilter').value = 'all';
+            document.getElementById('urgencyFilter').value = 'all';
+            renderCases();
+            closeSidebar();
+            if (view === 'dashboard') window.scrollTo({ top: 0, behavior: 'smooth' });
+            else document.getElementById('caseList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    nav.querySelector('[data-guidance-action="profile"]')?.addEventListener('click', () => {
+        closeSidebar();
+        document.getElementById('editProfileLink').click();
+    });
+}
+
+function setActiveGuidanceNavigation(view) {
+    document.querySelectorAll('[data-guidance-view]').forEach(link => {
+        const active = link.dataset.guidanceView === view;
+        link.classList.toggle('active', active);
+        if (active) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
+    });
+}
+
 /* ---------- Data ---------- */
 async function loadCases(silent = false) {
     try {
@@ -182,20 +252,39 @@ async function loadCases(silent = false) {
 
 function renderStats() {
     const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = String(value); };
+    const urgentCount = cases.filter(isOpenUrgent).length;
+    const newCount = cases.filter(item => item.status === 'Just Submitted').length;
+    const resolvedCount = cases.filter(item => item.status === 'Resolved').length;
     set('statTotal', cases.length);
-    set('statNew', cases.filter(item => item.status === 'Just Submitted').length);
-    set('statUrgent', cases.filter(item =>
-        (item.urgency === 'High' || item.urgency === 'Critical') &&
-        item.status !== 'Resolved' && item.status !== 'Rejected'
-    ).length);
-    set('statResolved', cases.filter(item => item.status === 'Resolved').length);
+    set('statNew', newCount);
+    set('statUrgent', urgentCount);
+    set('statResolved', resolvedCount);
+    set('navCountAll', cases.length);
+    set('navCountNew', newCount);
+    set('navCountUrgent', urgentCount);
+    set('navCountResolved', resolvedCount);
+}
+
+function isOpenUrgent(item) {
+    return ['High', 'Critical'].includes(item.urgency)
+        && item.status !== 'Resolved'
+        && item.status !== 'Rejected';
 }
 
 /* ---------- Filters ---------- */
 function initFilters() {
-    ['caseSearch'].forEach(id => document.getElementById(id).addEventListener('input', renderCases));
-    ['statusFilter', 'urgencyFilter', 'sortOrder'].forEach(id =>
-        document.getElementById(id).addEventListener('change', renderCases));
+    document.getElementById('caseSearch').addEventListener('input', () => {
+        activeGuidanceView = 'all';
+        setActiveGuidanceNavigation('all');
+        renderCases();
+    });
+    ['statusFilter', 'urgencyFilter'].forEach(id =>
+        document.getElementById(id).addEventListener('change', () => {
+            activeGuidanceView = 'all';
+            setActiveGuidanceNavigation('all');
+            renderCases();
+        }));
+    document.getElementById('sortOrder').addEventListener('change', renderCases);
     document.getElementById('refreshBtn').addEventListener('click', () => loadCases());
 }
 
@@ -206,6 +295,9 @@ function visibleCases() {
     const order = document.getElementById('sortOrder').value;
 
     const items = cases.filter(item =>
+        (activeGuidanceView === 'new' ? item.status === 'Just Submitted' :
+            activeGuidanceView === 'urgent' ? isOpenUrgent(item) :
+                activeGuidanceView === 'resolved' ? item.status === 'Resolved' : true) &&
         (status === 'all' || item.status === status) &&
         (urgency === 'all' || (item.urgency || 'Normal') === urgency) &&
         (!query || item.subject.toLowerCase().includes(query) || item.message.toLowerCase().includes(query))
