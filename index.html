@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.A.F.E. - CSPC Suggestions And Feedback Engagement</title>
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Top Site Header with CSPC S.A.F.E. Branding -->
+    <header class="top-header" id="topHeader">
+        <div class="header-left">
+            <button class="sidebar-toggle-btn mobile-menu-btn" id="sidebarToggleBtn" aria-label="Toggle navigation" title="Toggle navigation" aria-expanded="false" aria-controls="sidebar">
+                <svg class="hamburger-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <a href="#dashboard" class="header-logo-card" title="CSPC S.A.F.E. Dashboard" aria-label="CSPC S.A.F.E. Dashboard">
+                <img src="images/safe-logo.png" alt="CSPC S.A.F.E. Logo" class="header-logo-img">
+            </a>
+        </div>
+
+        <!-- Search Container -->
+        <div class="search-container">
+            <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16" y2="16"/></svg>
+            <input type="search" id="searchInput" class="search-input" aria-label="Search feedback and suggestions" placeholder="Search feedback or suggestions..." autocomplete="off">
+            <button type="button" class="search-clear-btn" id="searchClearBtn" title="Clear search" aria-label="Clear search" style="display: none;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="header-actions">
+            <!-- Theme Toggle -->
+            <button type="button" class="header-action-btn theme-toggle-btn" id="themeToggleBtn" title="Toggle light/dark theme" aria-label="Switch to dark mode" aria-pressed="false">
+                <svg class="theme-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+
+            <!-- Notifications Dropdown -->
+            <div class="header-dropdown-container">
+                <button type="button" class="header-action-btn notif-btn" id="notifBtn" title="Notifications" aria-label="Notifications, 3 unread" aria-expanded="false" aria-controls="notifDropdown">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span class="notif-badge">3</span>
+                </button>
+                <div class="dropdown-menu notif-dropdown" id="notifDropdown">
+                    <div class="dropdown-header">
+                        <h3>CSPC S.A.F.E. Alerts</h3>
+                        <button class="btn-text" id="markAllReadBtn">Mark all as read</button>
+                    </div>
+                    <div class="notif-list">
+                        <div class="notif-item unread">
+                            <div class="notif-icon-wrap bg-teal">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            <div class="notif-content">
+                                <p class="notif-text">Your feedback <strong>#FB-1024</strong> (Library AC) was resolved by CSPC Maintenance.</p>
+                                <span class="notif-time">25 mins ago</span>
+                            </div>
+                        </div>
+                        <div class="notif-item unread">
+                            <div class="notif-icon-wrap bg-blue">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                            </div>
+                            <div class="notif-content">
+                                <p class="notif-text">Your suggestion <strong>Solar Charging Benches</strong> reached 200+ student votes!</p>
+                                <span class="notif-time">2 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="notif-item unread">
+                            <div class="notif-icon-wrap bg-amber">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            </div>
+                            <div class="notif-content">
+                                <p class="notif-text">CSPC Registrar replied to <strong>Queue Ticketing System</strong> inquiry.</p>
+                                <span class="notif-time">Yesterday</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profile Dropdown -->
+            <div class="header-dropdown-container">
+                <button type="button" class="user-avatar" id="userProfileBtn" title="Account menu" aria-label="Account menu" aria-expanded="false" aria-controls="profileDropdown">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+                </button>
+                <div class="dropdown-menu profile-dropdown" id="profileDropdown">
+                    <div class="profile-dropdown-header">
+                        <div class="user-avatar large">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                        <div class="profile-info">
+                            <h4 id="profileDisplayName">Mark Student</h4>
+                            <p id="profileDisplayEmail">student@cspc.edu.ph</p>
+                            <span class="role-chip" id="profileDepartment">CSPC BSIT - Year 3</span>
+                        </div>
+                    </div>
+                    <div class="profile-dropdown-links">
+                        <a href="#settings" class="dropdown-link" id="linkToSettings">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            Account Settings
+                        </a>
+                        <a href="#submit" class="dropdown-link" id="linkToSubmit">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Quick Submit
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-link text-danger" id="logoutBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <!-- Sidebar Backdrop -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-text-block">
+                    <span class="sidebar-heading">Navigation</span>
+                </div>
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Sidebar" title="Close Sidebar">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                    <span class="nav-icon-box">
+                        <!-- Dashboard Grid Icon -->
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                    </span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="#submit" class="nav-item" data-page="submit">
+                    <span class="nav-icon-box">
+                        <!-- Submit Feedback Icon -->
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>
+                    </span>
+                    <span class="nav-label">Submit Feedback</span>
+                </a>
+                <a href="#suggestions" class="nav-item" data-page="suggestions">
+                    <span class="nav-icon-box">
+                        <!-- Suggestions User Icon -->
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </span>
+                    <span class="nav-label">Suggestions</span>
+                </a>
+                <a href="#reports" class="nav-item" data-page="reports">
+                    <span class="nav-icon-box">
+                        <!-- Reports Analytics Curve Icon -->
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </span>
+                    <span class="nav-label">Reports</span>
+                </a>
+                <a href="#admin" class="nav-item" id="adminNavItem" data-page="admin" hidden>
+                    <span class="nav-icon-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    </span>
+                    <span class="nav-label">Admin Panel</span>
+                </a>
+                <a href="#settings" class="nav-item" data-page="settings">
+                    <span class="nav-icon-box">
+                        <!-- Settings Sliders Icon -->
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                    </span>
+                    <span class="nav-label">Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user-mini">
+                    <div class="user-avatar mini">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div class="user-meta">
+                        <span class="user-name" id="sidebarDisplayName">Mark Student</span>
+                        <span class="user-role" id="sidebarDisplayRole">CSPC Student • BSIT</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Dashboard Content Container with Tabbed Views -->
+            <main class="dashboard-content">
+
+                <!-- ==========================================
+                     VIEW 1: DASHBOARD (CSPC S.A.F.E. Mockup)
+                     ========================================== -->
+                <section class="view-panel active" id="view-dashboard">
+                    <div class="view-header flex-header">
+                        <div>
+                            <h2>Dashboard Overview</h2>
+                            <p class="view-subtitle">Monitor campus suggestions, submit new feedback, and track resolution metrics.</p>
+                        </div>
+                    </div>
+                    <!-- Top Row: Feedback Form + Suggestions List -->
+                    <div class="top-row-grid">
+                        <!-- Submit Feedback Card -->
+                        <div class="card feedback-form-card">
+                            <form id="feedbackForm" onsubmit="return false;">
+                                <div class="form-group">
+                                    <input type="text" id="subjectInput" class="form-control" placeholder="Subject" required maxlength="100">
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="label-row">
+                                        <label for="feedbackText" class="form-label">Your feedback or suggestion</label>
+                                        <span class="char-counter" id="dashCharCounter">0 / 400</span>
+                                    </div>
+                                    <textarea id="feedbackText" class="form-control feedback-textarea" placeholder="Share your suggestions, issues or improvements..." rows="4" required maxlength="400"></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="categorySelect" class="form-label">Category</label>
+                                    <div class="select-wrapper">
+                                        <select id="categorySelect" class="form-control form-select">
+                                            <option value="Facilities" selected>Facilities</option>
+                                            <option value="Academic">Academic</option>
+                                            <option value="Administrative">Administrative</option>
+                                            <option value="Student Life">Student Life</option>
+                                            <option value="Cafeteria & Dining">Cafeteria & Dining</option>
+                                            <option value="Campus Safety">Campus Safety</option>
+                                        </select>
+                                        <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" id="saveDraftBtn" class="btn btn-secondary">Save Draft</button>
+                                    <button type="button" id="submitBtn" class="btn btn-primary">Submit</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Suggestions Feed Column -->
+                        <div class="suggestions-column-wrap">
+                            <div class="suggestions-column" id="suggestionsContainer"></div>
+
+                            <!-- Empty dashboard feed state -->
+                            <div class="empty-state" id="dashEmptyState" style="display: none;">
+                                <div class="empty-icon-wrap">
+                                    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                </div>
+                                <h4>No submissions yet</h4>
+                                <p>New feedback and suggestions will appear here.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Row: Analytics Charts -->
+                    <div class="bottom-row-grid">
+                        <!-- Monthly Feedback Volume Bar Chart Card -->
+                        <div class="card chart-card">
+                            <h2 class="chart-title">Monthly Feedback Volume</h2>
+                            <div class="chart-body">
+                                <div class="chart-canvas-wrapper">
+                                    <canvas id="monthlyVolumeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category Breakdown Donut / Pie Chart Card -->
+                        <div class="card chart-card">
+                            <h2 class="chart-title">Category Breakdown</h2>
+                            <div class="chart-body">
+                                <div class="chart-canvas-wrapper pie-canvas-wrapper">
+                                    <canvas id="categoryBreakdownChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- ==========================================
+                     VIEW 2: SUBMIT FEEDBACK (CSPC S.A.F.E. Dedicated)
+                     ========================================== -->
+                <section class="view-panel" id="view-submit" style="display: none;">
+                    <div class="view-header">
+                        <h2>Submit to CSPC S.A.F.E.</h2>
+                        <p class="view-subtitle">Suggestions And Feedback Engagement • Camarines Sur Polytechnic Colleges</p>
+                    </div>
+
+                    <div class="submit-page-grid">
+                        <div class="card submit-extended-card">
+                            <form id="dedicatedSubmitForm" onsubmit="return false;">
+                                <div class="form-group">
+                                    <label class="form-label" for="dedSubject">Subject / Title</label>
+                                    <input type="text" id="dedSubject" class="form-control" placeholder="E.g., CCS Computer Lab Aircon, Library Wi-Fi, Enrollment Line..." required>
+                                </div>
+
+                                <div class="form-row-2col">
+                                    <div class="form-group">
+                                        <label class="form-label" for="dedCategory">Category</label>
+                                        <div class="select-wrapper">
+                                            <select id="dedCategory" class="form-control form-select">
+                                                <option value="Facilities">Facilities & Maintenance (Rooms, Buildings, Grounds)</option>
+                                                <option value="Academic">Academic Curriculum & Instruction</option>
+                                                <option value="Administrative">Administrative Services (Registrar, Cashier, OSAS)</option>
+                                                <option value="Student Life">Student Life, Clubs & Sports</option>
+                                                <option value="Cafeteria & Dining">Canteen & Food Services</option>
+                                                <option value="Campus Safety">Campus Security, Gate & Health Clinic</option>
+                                            </select>
+                                            <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">Urgency Level</label>
+                                        <div class="urgency-selector">
+                                            <button type="button" class="urgency-pill active" data-urgency="Normal">
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+                                                <span>Normal</span>
+                                            </button>
+                                            <button type="button" class="urgency-pill" data-urgency="High">
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                                <span>High</span>
+                                            </button>
+                                            <button type="button" class="urgency-pill" data-urgency="Critical">
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                                <span>Critical</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="label-row">
+                                        <label class="form-label" for="dedMessage">Detailed Feedback or Suggestion</label>
+                                        <span class="char-counter" id="dedCharCounter">0 / 800</span>
+                                    </div>
+                                    <textarea id="dedMessage" class="form-control feedback-textarea" rows="6" placeholder="Provide specific CSPC building, classroom number, dates, or constructive ideas for administration review..." required maxlength="800"></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="checkbox-container">
+                                        <input type="checkbox" id="dedAnonymous">
+                                        <span class="checkbox-custom"></span>
+                                        <span class="checkbox-text">Submit anonymously (identity will be hidden from CSPC administrators)</span>
+                                    </label>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="button" id="dedSaveDraftBtn" class="btn btn-secondary">Save Draft</button>
+                                    <button type="button" id="dedSubmitBtn" class="btn btn-primary">Submit to S.A.F.E.</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="guidelines-stack">
+                            <div class="card guidelines-card">
+                                <h3 class="guidelines-title">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"/></svg>
+                                    CSPC S.A.F.E. Guidelines
+                                </h3>
+                                <ul class="guidelines-list">
+                                    <li><strong>Specify Location:</strong> State building names (e.g. CCS, COE, CAS, Library, Gymnasium, Admin).</li>
+                                    <li><strong>Constructive Tone:</strong> Actionable suggestions lead to the fastest administrative response.</li>
+                                    <li><strong>Privacy Protected:</strong> Student feedback is protected under the CSPC Student Charter.</li>
+                                </ul>
+
+                                <div class="guidelines-stat-box">
+                                    <span class="stat-badge">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                        Average Response Window
+                                    </span>
+                                    <p>Typical review and status update takes <strong>24 to 48 hours</strong>.</p>
+                                </div>
+                            </div>
+
+                            <div class="card live-preview-card">
+                                <span class="preview-badge">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    Live Preview
+                                </span>
+                                <div class="preview-card-inner">
+                                    <div class="avatar-circle small">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    </div>
+                                    <div>
+                                        <h4 id="previewTitle">Your Subject Title</h4>
+                                        <p id="previewSnippet">Your suggestion snippet will appear here dynamically...</p>
+                                        <span class="preview-meta" id="previewMeta">Facilities • Just now</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- ==========================================
+                     VIEW 3: SUGGESTIONS FEED (CSPC Community)
+                     ========================================== -->
+                <section class="view-panel" id="view-suggestions" style="display: none;">
+                    <div class="view-header flex-header">
+                        <div>
+                            <h2>CSPC Suggestions Community</h2>
+                            <p class="view-subtitle">Community ideas from students and faculty across Camarines Sur Polytechnic Colleges.</p>
+                        </div>
+                        <div class="suggestions-action-bar">
+                            <div class="filter-pill-group">
+                                <button class="filter-pill active" data-filter="all">All</button>
+                                <button class="filter-pill" data-filter="Facilities">Facilities</button>
+                                <button class="filter-pill" data-filter="Academic">Academic</button>
+                                <button class="filter-pill" data-filter="Dining">Dining</button>
+                            </div>
+                            <div class="sort-select-wrap">
+                                <select id="sortSuggestionsSelect" class="sort-select">
+                                    <option value="upvotes">Most Upvoted</option>
+                                    <option value="recent">Newest First</option>
+                                    <option value="comments">Most Discussed</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="suggestions-full-list" id="communitySuggestionsList"></div>
+
+                    <div class="empty-state" id="feedEmptyState" style="display: none;">
+                        <div class="empty-icon-wrap">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <h4>No suggestions yet</h4>
+                        <p>Submit feedback to start the campus community feed.</p>
+                    </div>
+                </section>
+
+
+                <!-- ==========================================
+                     VIEW 4: REPORTS & ANALYTICS (CSPC)
+                     ========================================== -->
+                <section class="view-panel" id="view-reports" style="display: none;">
+                    <div class="view-header flex-header">
+                        <div>
+                            <h2>CSPC S.A.F.E. Transparency Reports</h2>
+                            <p class="view-subtitle">Official resolution metrics and feedback analytics for Camarines Sur Polytechnic Colleges.</p>
+                        </div>
+                        <button class="btn btn-primary" id="exportReportBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <span>Export Report (CSV)</span>
+                        </button>
+                    </div>
+
+                    <div class="stats-cards-grid">
+                        <div class="card stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Total Submissions</span>
+                                <span class="stat-icon-wrap bg-blue">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                                </span>
+                            </div>
+                            <div class="stat-value" id="reportTotalSubmissions">0</div>
+                            <span class="stat-trend positive">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                <span>total feedback submissions</span>
+                            </span>
+                        </div>
+
+                        <div class="card stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Resolution Rate</span>
+                                <span class="stat-icon-wrap bg-teal">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/><polyline points="20 12 15 17"/></svg>
+                                </span>
+                            </div>
+                            <div class="stat-value" id="reportResolutionRate">0%</div>
+                            <span class="stat-trend positive">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                <span>marked as resolved</span>
+                            </span>
+                        </div>
+
+                        <div class="card stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Avg. Response Time</span>
+                                <span class="stat-icon-wrap bg-amber">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                </span>
+                            </div>
+                            <div class="stat-value" id="reportResponseTime">—</div>
+                            <span class="stat-trend positive">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+                                <span>response-time data unavailable</span>
+                            </span>
+                        </div>
+
+                        <div class="card stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Active Ideas</span>
+                                <span class="stat-icon-wrap bg-slate">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"/></svg>
+                                </span>
+                            </div>
+                            <div class="stat-value" id="reportActiveIdeas">0</div>
+                            <span class="stat-trend neutral">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                <span><span id="reportTotalVotes">0</span> total votes</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="reports-charts-grid">
+                        <div class="card chart-card">
+                            <h3 class="chart-title">Submissions vs Resolutions (Last 6 Months)</h3>
+                            <div class="chart-canvas-wrapper reports-line-wrapper">
+                                <canvas id="reportsTrendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card chart-card">
+                            <h3 class="chart-title">Status Breakdown</h3>
+                            <div class="chart-canvas-wrapper reports-donut-wrapper">
+                                <canvas id="reportsStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==========================================
+                     ADMIN REPORT MANAGEMENT
+                     ========================================== -->
+                <section class="view-panel" id="view-admin" style="display: none;">
+                    <div class="view-header">
+                        <h2>Admin Panel</h2>
+                        <p class="view-subtitle">Review student reports, update their status, and post official replies.</p>
+                    </div>
+                    <div class="card settings-card">
+                        <div class="admin-report-list" id="adminReportsList"></div>
+                        <div class="empty-state" id="adminReportsEmpty" hidden>
+                            <div class="empty-icon-wrap">
+                                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            </div>
+                            <h4>No reports to manage</h4>
+                            <p>Submitted feedback will appear here.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==========================================
+                     VIEW 5: SETTINGS (CSPC Profile)
+                     ========================================== -->
+                <section class="view-panel" id="view-settings" style="display: none;">
+                    <div class="view-header">
+                        <h2>CSPC Account & Preferences</h2>
+                        <p class="view-subtitle">Manage notification preferences and edit your student profile.</p>
+                    </div>
+
+                    <div class="settings-grid settings-preferences-grid">
+                        <div class="card settings-card">
+                            <h3 class="settings-section-title">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                                <span>Notification Preferences</span>
+                            </h3>
+                            <div class="settings-toggle-list">
+                                <div class="toggle-item">
+                                    <div>
+                                        <h4>Email Status Alerts</h4>
+                                        <p>Get notified when CSPC administrators respond to or resolve your submissions.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="prefStatusAlert" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+
+                                <div class="toggle-item">
+                                    <div>
+                                        <h4>Upvote Milestones</h4>
+                                        <p>Receive updates when your campus suggestions hit 50, 100, or 200 student upvotes.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="prefUpvotes" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+
+                                <div class="toggle-item">
+                                    <div>
+                                        <h4>Anonymous by Default</h4>
+                                        <p>Always hide your identity on future feedback submissions automatically.</p>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="prefAnonymous">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="profile-edit-action">
+                                <button type="button" id="editProfileBtn" class="btn btn-primary">Edit Profile</button>
+                            </div>
+
+                            <div class="danger-zone-box">
+                                <button type="button" id="clearDataBtn" class="btn btn-secondary text-danger">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    <span>Clear Local Drafts & Cache</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Profile Editor Modal -->
+    <div class="modal-backdrop" id="profileEditorModal" role="dialog" aria-modal="true" aria-labelledby="profileEditorTitle" aria-hidden="true">
+        <div class="modal-dialog profile-editor-dialog">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="profileEditorTitle">CSPC Student Profile</h3>
+                    <span class="modal-subtitle">Edit your account details</span>
+                </div>
+                <button type="button" class="modal-close-btn" id="closeProfileEditorBtn" aria-label="Close profile editor">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>
+                </button>
+            </div>
+            <div class="modal-body profile-editor-body">
+                <form id="profileForm" onsubmit="return false;">
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label class="form-label" for="settingName">Full Name</label>
+                            <input type="text" id="settingName" class="form-control" value="Mark Student" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="settingEmail">CSPC Email Address</label>
+                            <input type="email" id="settingEmail" class="form-control" value="student@cspc.edu.ph" required>
+                        </div>
+                    </div>
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label class="form-label" for="settingDept">College / Department</label>
+                            <input type="text" id="settingDept" class="form-control" value="College of Computer Studies (CCS) - BSIT" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="settingRole">Account Role</label>
+                            <input type="text" id="settingRole" class="form-control" value="CSPC Student Member" readonly>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comments Modal -->
+    <div class="modal-backdrop" id="commentsModalBackdrop">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="modalPostTitle">Discussion Thread</h3>
+                    <span class="modal-subtitle">CSPC community insights & official administrative notes</span>
+                </div>
+                <button type="button" class="modal-close-btn" id="closeCommentsModalBtn">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="comments-thread-list" id="commentsThreadList"></div>
+            </div>
+            <div class="modal-footer">
+                <form id="commentPostForm" onsubmit="return false;" class="comment-input-row">
+                    <input type="text" id="commentTextInput" class="form-control" placeholder="Write a constructive response..." required>
+                    <button type="button" id="postCommentBtn" class="btn btn-primary">Reply</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Canvas for Confetti -->
+    <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+    <!-- Toast Notification Popup -->
+    <div id="toastNotification" class="toast-notification"></div>
+
+    <!-- Custom Script -->
+    <script src="script.js"></script>
+</body>
+</html>
