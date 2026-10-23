@@ -95,12 +95,17 @@ function initOnboardingModals() {
         try {
             const email = loginForm.elements.email.value.trim().toLowerCase();
             const password = loginForm.elements.password.value;
-            await apiRequest('/api/auth/login', {
+            const result = await apiRequest('/api/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ email, password })
             });
             authFormStatus.textContent = 'Login successful. Opening the dashboard...';
-            window.location.assign('index.html');
+    
+            if (result && result.user && result.user.role === 'admin') {
+                window.location.assign('admin.html');
+            } else {
+                window.location.assign('index.html');
+            }
         } catch (error) {
             console.error('Login failed:', error);
             authFormStatus.textContent = error instanceof Error
