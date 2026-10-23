@@ -62,6 +62,18 @@ document.addEventListener('DOMContentLoaded', () => {
         toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
     }
 
+    function initTheme() {
+        let theme = 'light';
+        try {
+            theme = localStorage.getItem('safe_cspc_theme') || 'light';
+        } catch (error) {
+            console.error('Unable to read theme preference:', error);
+        }
+        document.documentElement.dataset.theme = theme;
+        document.getElementById('themeToggleBtn').setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+        document.getElementById('themeToggleBtn').setAttribute('aria-pressed', String(theme === 'dark'));
+    }
+
     function formatDate(value) {
         return new Date(value).toLocaleString(undefined, {
             dateStyle: 'medium',
@@ -203,15 +215,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('refreshBtn').addEventListener('click', loadFeedback);
     statusFilter.addEventListener('change', renderFeedback);
+    initTheme();
     document.getElementById('themeToggleBtn').addEventListener('click', () => {
         const root = document.documentElement;
-        root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        const theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        root.dataset.theme = theme;
+        document.getElementById('themeToggleBtn').setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+        document.getElementById('themeToggleBtn').setAttribute('aria-pressed', String(theme === 'dark'));
+        try {
+            localStorage.setItem('safe_cspc_theme', theme);
+        } catch (error) {
+            console.error('Unable to save theme preference:', error);
+        }
     });
     document.getElementById('logoutBtn').addEventListener('click', async () => {
         try {
             await apiRequest('/api/auth/logout', { method: 'POST' });
-        } finally {
             window.location.assign('onboarding.html');
+        } catch (error) {
+            notify(error.message || 'Unable to sign out. Please try again.');
         }
     });
 

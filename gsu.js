@@ -42,8 +42,21 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
 
     async function init() {
+        initTheme();
         setupEventListeners();
         await loadGsuData();
+    }
+
+    function initTheme() {
+        let theme = 'light';
+        try {
+            theme = localStorage.getItem('safe_cspc_theme') || 'light';
+        } catch (error) {
+            console.error('Unable to read theme preference:', error);
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+        themeToggleBtn.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
+        themeToggleBtn.setAttribute('aria-pressed', String(theme === 'dark'));
     }
 
     async function apiRequest(endpoint, options = {}) {
@@ -120,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="admin-report-actions">
                     <div>
                         <label class="form-label">Update Status</label>
-                        <select class="form-control sort-select status-change-select" data-id="${item.id}">
+                        <select class="form-control sort-select status-change-select" data-id="${item.id}" data-previous-status="${escapeHtml(item.status)}">
                             ${['Just Submitted', 'Under Review', 'In Progress', 'Approved', 'Resolved', 'Rejected']
                                 .map(status => `<option value="${status}" ${item.status === status ? 'selected' : ''}>${status}</option>`)
                                 .join('')}
@@ -136,9 +149,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
         document.querySelectorAll('.status-change-select').forEach(select => {
             select.addEventListener('change', async (e) => {
-                const id = e.target.getAttribute('data-id');
-                const newStatus = e.target.value;
-                await handleStatusUpdate(id, newStatus);
+                const statusSelect = e.currentTarget;
+                const id = statusSelect.getAttribute('data-id');
+                const newStatus = statusSelect.value;
+                statusSelect.disabled = true;
+                try {
+                    await handleStatusUpdate(id, newStatus);
+                } catch (error) {
+                    statusSelect.value = statusSelect.dataset.previousStatus;
+                    showToast(error.message || 'Failed to update report status');
+                } finally {
+                    statusSelect.disabled = false;
+                }
             });
         });
     
@@ -152,16 +174,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleStatusUpdate(id, status) {
-        try {
-            await apiRequest(`/api/gsu/feedback/${id}/status`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status })
-            });
-            showToast(`Status updated to "${status}"`);
-            await loadGsuData();
-        } catch (err) {
-            showToast(err.message || 'Failed to update report status');
-        }
+        await apiRequest(`/api/gsu/feedback/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status })
+        });
+        showToast(`Status updated to "${status}"`);
+        await loadGsuData();
     }
 
     async function openCommentsModal(id, title) {
@@ -238,6 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gsuSearchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value.trim();
             searchClearBtn.style.display = searchQuery ? 'block' : 'none';
+            if (searchQuery) navigateToView('manage');
             renderReports();
         });
 
@@ -245,30 +264,31 @@ document.addEventListener('DOMContentLoaded', () => {
             gsuSearchInput.value = '';
             searchQuery = '';
             searchClearBtn.style.display = 'none';
+            navigateToView('manage');
             renderReports();
         });
 
         // Sidebar Navigation
         document.querySelectorAll('.sidebar-nav .nav-item[data-page]').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetPage = item.getAttribute('data-page');
-                
-                document.querySelectorAll('.sidebar-nav .nav-item').forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-
-                document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
-                const activePanel = document.getElementById(`view-${targetPage}`);
-                if (activePanel) activePanel.classList.add('active');
-
+            item.addEventListener('click', event => {
+                event.preventDefault();
+                navigateToView(item.dataset.page);
                 closeSidebar();
             });
         });
+        document.getElementById('homeNavLink').addEventListener('click', event => {
+            event.preventDefault();
+            navigateToView('manage');
+        });
+        window.addEventListener('hashchange', () => navigateToView(window.location.hash.slice(1), false));
+        window.addEventListener('popstate', () => navigateToView(window.location.hash.slice(1), false));
+        navigateToView(window.location.hash.slice(1) || 'manage', false);
 
         // Sidebar Toggles
         sidebarToggleBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-            sidebarBackdrop.classList.toggle('active');
+            const isOpen = sidebar.classList.toggle('open');
+            sidebarBackdrop.classList.toggle('active', isOpen);
+            sidebarToggleBtn.setAttribute('aria-expanded', String(isOpen));
         });
 
         sidebarCloseBtn.addEventListener('click', closeSidebar);
@@ -277,6 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function closeSidebar() {
             sidebar.classList.remove('open');
             sidebarBackdrop.classList.remove('active');
+            sidebarToggleBtn.setAttribute('aria-expanded', 'false');
         }
 
         // Dropdowns & Theme Toggle
@@ -291,6 +312,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
             document.documentElement.setAttribute('data-theme', newTheme);
+            themeToggleBtn.setAttribute('aria-label', `Switch to ${newTheme === 'dark' ? 'light' : 'dark'} mode`);
+            themeToggleBtn.setAttribute('aria-pressed', String(newTheme === 'dark'));
+            try {
+                localStorage.setItem('safe_cspc_theme', newTheme);
+            } catch (error) {
+                console.error('Unable to save theme preference:', error);
+            }
         });
 
         logoutBtn.addEventListener('click', async () => {
@@ -298,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await apiRequest('/api/auth/logout', { method: 'POST' });
                 window.location.assign('onboarding.html');
             } catch (err) {
-                window.location.assign('onboarding.html');
+                showToast(err.message || 'Unable to sign out. Please try again.');
             }
         });
 
@@ -308,6 +336,30 @@ document.addEventListener('DOMContentLoaded', () => {
         commentTextInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') postOfficialReply();
         });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeSidebar();
+        });
+    }
+
+    function navigateToView(targetPage, addHistory = true) {
+        const navItems = [...document.querySelectorAll('.sidebar-nav .nav-item[data-page]')];
+        const page = navItems.some(item => item.dataset.page === targetPage) ? targetPage : 'manage';
+        const currentPage = document.querySelector('.sidebar-nav .nav-item[data-page].active')?.dataset.page;
+        if (addHistory && window.location.hash !== `#${page}`) {
+            window.history.pushState({ page }, '', `#${page}`);
+        } else if (window.location.hash !== `#${page}`) {
+            window.history.replaceState({ page }, '', `#${page}`);
+        }
+        navItems.forEach(item => {
+            const active = item.dataset.page === page;
+            item.classList.toggle('active', active);
+            if (active) item.setAttribute('aria-current', 'page');
+            else item.removeAttribute('aria-current');
+        });
+        document.querySelectorAll('.view-panel').forEach(panel => {
+            panel.classList.toggle('active', panel.id === `view-${page}`);
+        });
+        if (page === 'analytics' && currentPage !== page) renderCharts();
     }
 
     function renderCharts() {

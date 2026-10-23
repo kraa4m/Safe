@@ -506,7 +506,10 @@ async function handleApi(request, response, url) {
             );
         } else if (user.role === 'mict') {
             query = pool.execute(
-                "SELECT * FROM feedback WHERE category = 'Technical Support' AND is_confidential = FALSE ORDER BY created_at DESC"
+                `SELECT * FROM feedback
+                 WHERE category IN ('Technical Support', 'Technical / System')
+                   AND is_confidential = FALSE
+                 ORDER BY created_at DESC`
             );
         } else {
             query = pool.execute(
