@@ -84,42 +84,18 @@
 
             <!-- Notifications Dropdown -->
             <div class="header-dropdown-container">
-                <button type="button" class="header-action-btn notif-btn" id="notifBtn" title="Notifications" aria-label="Notifications, 3 unread" aria-expanded="false" aria-controls="notifDropdown">
+                <button type="button" class="header-action-btn notif-btn" id="notifBtn" title="Notifications" aria-label="Notifications" aria-expanded="false" aria-controls="notifDropdown">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                    <span class="notif-badge">3</span>
+                    <span class="notif-badge" id="notifBadge" style="display: none;">0</span>
                 </button>
                 <div class="dropdown-menu notif-dropdown" id="notifDropdown">
                     <div class="dropdown-header">
                         <h3>CSPC S.A.F.E. Alerts</h3>
-                        <button class="btn-text" id="markAllReadBtn">Mark all as read</button>
+                        <button class="btn-text" id="markAllReadBtn" style="display: none;">Mark all as read</button>
                     </div>
-                    <div class="notif-list">
-                        <div class="notif-item unread">
-                            <div class="notif-icon-wrap bg-teal">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                            </div>
-                            <div class="notif-content">
-                                <p class="notif-text">Your feedback <strong>#FB-1024</strong> (Library AC) was resolved by CSPC Maintenance.</p>
-                                <span class="notif-time">25 mins ago</span>
-                            </div>
-                        </div>
-                        <div class="notif-item unread">
-                            <div class="notif-icon-wrap bg-blue">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-                            </div>
-                            <div class="notif-content">
-                                <p class="notif-text">Your suggestion <strong>Solar Charging Benches</strong> reached 200+ student votes!</p>
-                                <span class="notif-time">2 hours ago</span>
-                            </div>
-                        </div>
-                        <div class="notif-item unread">
-                            <div class="notif-icon-wrap bg-amber">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                            </div>
-                            <div class="notif-content">
-                                <p class="notif-text">CSPC Registrar replied to <strong>Queue Ticketing System</strong> inquiry.</p>
-                                <span class="notif-time">Yesterday</span>
-                            </div>
+                    <div class="notif-list" id="notifList">
+                        <div class="empty-state" style="padding: 18px 12px; text-align: center;">
+                            <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">No new notifications</p>
                         </div>
                     </div>
                 </div>

@@ -342,12 +342,13 @@ function switchView(viewName, updateHash = true) {
 /* ==========================================================================
    Header Dropdowns (Notifications & Profile)
    ========================================================================== */
-function initDropdowns() {
+   function initDropdowns() {
     const notifBtn = document.getElementById('notifBtn');
     const notifDropdown = document.getElementById('notifDropdown');
     const profileBtn = document.getElementById('userProfileBtn');
     const profileDropdown = document.getElementById('profileDropdown');
     const markAllReadBtn = document.getElementById('markAllReadBtn');
+    const notifBadge = document.getElementById('notifBadge');
 
     if (notifBtn && notifDropdown) {
         notifBtn.addEventListener('click', (e) => {
@@ -372,9 +373,9 @@ function initDropdowns() {
     if (markAllReadBtn) {
         markAllReadBtn.addEventListener('click', () => {
             document.querySelectorAll('.notif-item.unread').forEach(item => item.classList.remove('unread'));
-            const badge = document.querySelector('.notif-badge');
-            if (badge) badge.style.display = 'none';
+            if (notifBadge) notifBadge.style.display = 'none';
             if (notifBtn) notifBtn.setAttribute('aria-label', 'Notifications');
+            markAllReadBtn.style.display = 'none';
             showToast('All notifications marked as read');
         });
     }
