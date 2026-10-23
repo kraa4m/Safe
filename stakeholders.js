@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mict: {
             label: 'MICT & ICTU',
             title: 'Technology support work queue',
-            description: 'Review and resolve reports about campus technology, systems, and technical support.',
+            description: 'Maintain and support S.A.F.E. while reviewing and resolving reports about campus technology, systems, and technical support.',
             listTitle: 'Technical support reports',
             listEyebrow: 'MICT & ICTU WORK QUEUE',
             totalLabel: 'Technical reports',

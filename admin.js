@@ -328,10 +328,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('refreshStakeholdersButton')
             ?.addEventListener('click', loadStakeholderAccounts);
         const roleDescriptions = {
-            faculty: 'Faculty accounts can submit academic and administrative feedback.',
-            gsu: 'GSU accounts can review facilities, dining, and campus safety reports.',
-            mict: 'MICT & ICTU accounts can manage technical support reports.',
-            guidance: 'Guidance accounts can access confidential personal submissions.'
+            faculty: 'Faculty can submit feedback about academic and administrative processes.',
+            gsu: 'The General Service Unit receives and resolves facilities-related feedback.',
+            mict: 'MICT & ICTU maintains and supports S.A.F.E. and handles technical or system support reports.',
+            guidance: 'The Guidance Office handles sensitive or personal complaints in a restricted queue.'
         };
         document.getElementById('stakeholderRole')?.addEventListener('change', event => {
             document.getElementById('stakeholderRoleHint').textContent =

@@ -58,11 +58,11 @@ const ROLE_LABELS = {
 // Which office receives each category. Guidance categories are always private.
 const CATEGORY_OWNER = {
     'Facilities': 'gsu',
-    'Cafeteria & Dining': 'gsu',
-    'Campus Safety': 'gsu',
     'Academic': 'admin',
     'Administrative': 'admin',
     'Student Life': 'admin',
+    'Cafeteria & Dining': 'admin',
+    'Campus Safety': 'admin',
     'Technical Support': 'mict',
     'Technical / System': 'mict',
     'Guidance & Personal': 'guidance',
@@ -407,8 +407,8 @@ async function initializeDatabase() {
     await initializeConfiguredAccount({
         email: GSU_EMAIL,
         password: GSU_PASSWORD,
-        name: 'General Services Unit',
-        department: 'General Services Unit',
+        name: 'General Service Unit',
+        department: 'General Service Unit',
         role: 'gsu',
         label: 'GSU'
     });
@@ -489,7 +489,7 @@ async function handleApi(request, response, url) {
         const [items] = await pool.execute(
             `SELECT * FROM feedback 
              WHERE is_confidential = FALSE
-               AND LOWER(TRIM(category)) IN ('facilities', 'cafeteria & dining', 'cafeteria and dining', 'campus safety')
+               AND LOWER(TRIM(category)) = 'facilities'
              ORDER BY created_at DESC`
         );
     
@@ -594,7 +594,7 @@ async function handleApi(request, response, url) {
         const email = validateEmail(body.email);
         const roleDetails = {
             faculty: 'CSPC Faculty',
-            gsu: 'General Services Unit',
+            gsu: 'General Service Unit',
             mict: 'MICT & ICTU',
             guidance: 'Guidance Office'
         };

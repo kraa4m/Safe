@@ -34,7 +34,20 @@ GSU_EMAIL=
 GSU_PASSWORD=
 ```
 
-Set each account's email and password together to provision it at startup. The supported prefixes are `ADMIN`, `FACULTY`, `MICT`, `GUIDANCE`, and `GSU`; passwords must be at least 12 characters. The stakeholder email defaults shown above can be changed. These settings provision or update one account per role, so keep the passwords stable between restarts. Copy `.env.example` to `.env`, set unique credentials, and keep `.env` private; never commit real passwords. Administrators can also create stakeholder accounts from the Admin Dashboard. Faculty submit Academic and Administrative feedback and track their reports. MICT & ICTU manages Technical Support reports. The Guidance Office manages confidential Guidance & Personal submissions; they are excluded from public, GSU, and administrator feedback lists and are visible only to the submitter and Guidance. Role checks are enforced by the API as well as the interface.
+Set each account's email and password together to provision it at startup. The supported prefixes are `ADMIN`, `FACULTY`, `MICT`, `GUIDANCE`, and `GSU`; passwords must be at least 12 characters. The stakeholder email defaults shown above can be changed. These settings provision or update one account per role, so keep the passwords stable between restarts. Copy `.env.example` to `.env`, set unique credentials, and keep `.env` private; never commit real passwords. Administrators can also create stakeholder accounts from the Admin Dashboard.
+
+## Stakeholders and responsibilities
+
+| Stakeholder | System role | Responsibility in S.A.F.E. |
+| --- | --- | --- |
+| Student | `user` | Primary users who submit feedback and suggestions, follow updates, and participate in public discussions. |
+| Faculty | `faculty` | Submit Academic or Administrative feedback and track their own submissions. |
+| School Administration | `admin` | Review and act on non-confidential concerns through report status updates and official replies. Provision this account with `ADMIN_EMAIL` and `ADMIN_PASSWORD`. |
+| MICT & ICTU | `mict` | Maintain and support S.A.F.E.; receive Technical Support and legacy Technical / System reports. |
+| Guidance Office | `guidance` | Handle sensitive or personal complaints in a restricted queue. Guidance & Personal submissions are private, excluded from public, GSU, and administrator feedback lists, and visible only to the submitter and Guidance. |
+| General Service Unit | `gsu` | Receive and resolve facilities-related feedback. |
+
+Role checks are enforced by the API as well as the interface. Faculty submissions are restricted to Academic and Administrative categories. Facilities reports are assigned to GSU; other non-confidential concerns, including dining and campus safety, are assigned to School Administration. Each office's management queue and status updates are limited to its assigned categories.
 
 Leave a role's email and password blank to provision that account through the Admin Dashboard instead. The database startup migration adds the confidential-feedback flag to existing installations. Selecting the Guidance & Personal category automatically makes a submission private.
 

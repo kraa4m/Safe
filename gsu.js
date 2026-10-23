@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Category Chart (Strictly GSU Categories)
-        const categories = ['Facilities', 'Cafeteria & Dining', 'Campus Safety'];
+        const categories = ['Facilities'];
         const categoryCounts = categories.map(cat => allFeedback.filter(f => f.category === cat).length);
 
         const ctxCategory = document.getElementById('gsuCategoryChart').getContext('2d');
