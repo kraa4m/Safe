@@ -10,7 +10,7 @@ let reportsTrendChart = null;
 let reportsStatusChart = null;
 let activeCommentFeedbackId = null;
 let backendFeedback = [];
-let currentUserIsAdmin = false;
+let currentUserIsStaff = false;
 const ADMIN_STATUSES = ['Just Submitted', 'Under Review', 'In Progress', 'Approved', 'Resolved', 'Rejected'];
 const FEEDBACK_CATEGORIES = [
     'Facilities',
@@ -18,9 +18,12 @@ const FEEDBACK_CATEGORIES = [
     'Administrative',
     'Student Life',
     'Cafeteria & Dining',
-    'Campus Safety'
+    'Campus Safety',
+    'Technical / System',
+    'Sensitive / Personal'
 ];
-const CATEGORY_COLORS = ['#2563eb', '#f59e0b', '#0d9488', '#334155', '#0284c7', '#8b5cf6'];
+const CATEGORY_COLORS = ['#2563eb', '#f59e0b', '#0d9488', '#334155', '#0284c7', '#8b5cf6', '#ef4444', '#14b8a6'];
+const STAFF_ROLES = ['admin', 'mict', 'guidance', 'gsu'];
 
 async function apiRequest(path, options = {}) {
     const response = await fetch(path, {
@@ -77,9 +80,9 @@ async function initLoggedInProfile() {
             window.location.replace('onboarding.html');
             return false;
         }
-        currentUserIsAdmin = user.role === 'admin';
+        currentUserIsStaff = STAFF_ROLES.includes(user.role);
         const adminNavItem = document.getElementById('adminNavItem');
-        if (adminNavItem) adminNavItem.hidden = !currentUserIsAdmin;
+        if (adminNavItem) adminNavItem.hidden = !currentUserIsStaff;
         updateProfileDisplay(user);
         return true;
     } catch (error) {
@@ -112,7 +115,15 @@ function updateProfileDisplay(user) {
     if (sidebarRole) {
         sidebarRole.textContent = user.role === 'admin'
             ? 'S.A.F.E. Administrator'
-            : `CSPC Student • ${department}`;
+            : (user.role && user.role !== 'user')
+                ? user.roleLabel || user.role
+                : `CSPC Student • ${department}`;
+    }
+    const settingRole = document.getElementById('settingRole');
+    if (settingRole) {
+        settingRole.value = (user.role && user.role !== 'user')
+            ? `CSPC ${user.roleLabel || user.role}`
+            : 'CSPC Student Member';
     }
 }
 
@@ -282,8 +293,8 @@ function initNavigationRouter() {
 }
 
 function switchView(viewName, updateHash = true) {
-    if (viewName === 'admin' && !currentUserIsAdmin) {
-        showToast('Administrator access is required.');
+    if (viewName === 'admin' && !currentUserIsStaff) {
+        showToast('Staff access is required.');
         viewName = 'dashboard';
     }
     const validViews = ['dashboard', 'submit', 'suggestions', 'reports', 'admin', 'settings'];
@@ -1085,7 +1096,7 @@ function initAdminPanel() {
 }
 
 async function loadAdminReports() {
-    if (!currentUserIsAdmin) return;
+    if (!currentUserIsStaff) return;
     const reportsList = document.getElementById('adminReportsList');
     const emptyState = document.getElementById('adminReportsEmpty');
     if (!reportsList || !emptyState) return;
@@ -1337,7 +1348,7 @@ function appendComment(threadList, comment) {
     if (comment.isAdmin) {
         const badge = document.createElement('span');
         badge.className = 'verified-tag';
-        badge.textContent = 'Admin';
+        badge.textContent = 'Official';
         authorRow.append(author, badge);
     } else {
         authorRow.append(author);
