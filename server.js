@@ -23,6 +23,8 @@ const DB_PASSWORD = process.env.DB_PASSWORD || '';
 const DB_NAME = process.env.DB_NAME || 'cspc_safe';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ? process.env.ADMIN_EMAIL.trim().toLowerCase() : '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const GSU_EMAIL = process.env.GSU_EMAIL ? process.env.GSU_EMAIL.trim().toLowerCase() : '';
+const GSU_PASSWORD = process.env.GSU_PASSWORD || '';
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60;
 
 if (!/^[a-zA-Z0-9_]{1,64}$/.test(DB_NAME)) {
@@ -116,6 +118,13 @@ async function requireUser(request) {
 async function requireAdmin(request) {
     const user = await requireUser(request);
     if (user.role !== 'admin') throw fail(403, 'Administrator access is required.');
+    return user;
+}
+async function requireGsuOrAdmin(request) {
+    const user = await requireUser(request);
+    if (user.role !== 'gsu' && user.role !== 'admin') {
+        throw fail(403, 'GSU or Administrator access is required.');
+    }
     return user;
 }
 
@@ -279,6 +288,7 @@ async function initializeDatabase() {
         await pool.query('ALTER TABLE comments ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE');
     }
     await initializeAdminAccount();
+    await initializeGsuAccount();
     await pool.query('SELECT 1');
 }
 
@@ -306,11 +316,50 @@ async function initializeAdminAccount() {
     );
 }
 
+async function initializeGsuAccount() {
+    if (!GSU_EMAIL && !GSU_PASSWORD) return;
+    if (!GSU_EMAIL || !GSU_PASSWORD) {
+        throw new Error('Set both GSU_EMAIL and GSU_PASSWORD to enable the GSU account.');
+    }
+
+    const email = validateEmail(GSU_EMAIL);
+    if (GSU_PASSWORD.length < 12 || GSU_PASSWORD.length > 128) {
+        throw new Error('GSU_PASSWORD must be between 12 and 128 characters.');
+    }
+
+    const salt = randomBytes(16);
+    const passwordHash = Buffer.from(await scrypt(GSU_PASSWORD, salt, 64));
+
+    await pool.execute(
+        `INSERT INTO users (id, name, email, department, role, salt, password_hash, created_at)
+        VALUES (?, 'General Services Unit', ?, 'General Services Unit', 'gsu', ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            name = VALUES(name),
+            department = VALUES(department),
+            role = 'gsu',
+            salt = VALUES(salt),
+            password_hash = VALUES(password_hash)`,
+        [randomUUID(), email, salt.toString('hex'), passwordHash.toString('hex'), new Date()]
+    );
+}
+
 async function handleApi(request, response, url) {
     const { pathname } = url;
     if (request.method === 'GET' && pathname === '/api/health') {
         await pool.query('SELECT 1');
         return sendJson(response, 200, { status: 'ok', database: 'connected' });
+    }
+    if (request.method === 'GET' && pathname === '/api/gsu/feedback') {
+        const user = await requireGsuOrAdmin(request);
+    
+        const [items] = await pool.execute(
+            `SELECT * FROM feedback 
+             WHERE LOWER(TRIM(category)) IN ('facilities', 'cafeteria & dining', 'cafeteria and dining', 'campus safety') 
+             ORDER BY created_at DESC`
+        );
+    
+        const feedback = await Promise.all(items.map(item => serializeFeedback(item, user)));
+        return sendJson(response, 200, { feedback });
     }
 
     if (request.method === 'POST' && pathname === '/api/auth/register') {
@@ -404,6 +453,34 @@ async function handleApi(request, response, url) {
         const feedback = await Promise.all(items.map(item => serializeFeedback(item, user)));
         return sendJson(response, 200, { feedback });
     }
+    if (request.method === 'POST' && pathname === '/api/feedback') {
+        const user = await requireUser(request);
+        const body = await readJson(request);
+
+        const subject = validateText(body.subject, 'Subject', 100);
+        const message = validateText(body.message, 'Message', 800);
+        const category = validateText(body.category, 'Category', 40);
+        const urgency = body.urgency ? validateText(body.urgency, 'Urgency', 20) : 'Low';
+        const anonymous = Boolean(body.anonymous);
+
+        if (!CATEGORIES.has(category)) {
+            throw fail(400, 'Please select a valid feedback category.');
+        }
+
+        const id = randomUUID();
+        const createdAt = new Date();
+
+        await pool.execute(
+            `INSERT INTO feedback (id, user_id, author_name, anonymous, subject, message, category, urgency, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Just Submitted', ?)`,
+            [id, user.id, user.name, anonymous, subject, message, category, urgency, createdAt]
+        );
+
+        const [rows] = await pool.execute('SELECT * FROM feedback WHERE id = ?', [id]);
+        const createdItem = await serializeFeedback(rows[0], user);
+
+        return sendJson(response, 201, { feedback: createdItem, message: 'Report submitted successfully.' });
+    }
 
     if (request.method === 'GET' && pathname === '/api/admin/feedback') {
         const user = await requireAdmin(request);
@@ -412,53 +489,35 @@ async function handleApi(request, response, url) {
         return sendJson(response, 200, { feedback });
     }
 
-    const adminStatusMatch = pathname.match(/^\/api\/admin\/feedback\/([0-9a-f-]+)\/status$/i);
-    if (request.method === 'PATCH' && adminStatusMatch) {
-        await requireAdmin(request);
+    const statusMatch = pathname.match(/^\/api\/(?:admin|gsu)\/feedback\/([0-9a-f-]+)\/status$/i);
+    if (request.method === 'PATCH' && statusMatch) {
+        const user = await requireGsuOrAdmin(request);
         const body = await readJson(request);
         const status = validateText(body.status, 'Status', 40);
+    
         if (!['Just Submitted', 'Under Review', 'In Progress', 'Approved', 'Resolved', 'Rejected'].includes(status)) {
             throw fail(400, 'Choose a valid report status.');
         }
+    
+        // Ensure GSU can only modify reports in their permitted categories
+        if (user.role === 'gsu') {
+            const [rows] = await pool.execute('SELECT category FROM feedback WHERE id = ?', [statusMatch[1]]);
+            if (!rows.length) throw fail(404, 'Feedback not found.');
+            
+            const allowedCategories = new Set(['Facilities', 'Cafeteria & Dining', 'Campus Safety']);
+            if (!allowedCategories.has(rows[0].category)) {
+                throw fail(403, 'GSU accounts can only manage Facilities, Cafeteria & Dining, and Campus Safety reports.');
+            }
+        }
+    
         const [result] = await pool.execute(
             'UPDATE feedback SET status = ? WHERE id = ?',
-            [status, adminStatusMatch[1]]
+            [status, statusMatch[1]]
         );
+    
         if (!result.affectedRows) throw fail(404, 'Feedback not found.');
-        return sendJson(response, 200, { id: adminStatusMatch[1], status });
+        return sendJson(response, 200, { id: statusMatch[1], status });
     }
-
-    if (request.method === 'POST' && pathname === '/api/feedback') {
-        const user = await requireUser(request);
-        const body = await readJson(request);
-        const subject = validateText(body.subject, 'Subject', 100);
-        const message = validateText(body.message, 'Feedback', 800);
-        if (!CATEGORIES.has(body.category)) throw fail(400, 'Choose a valid feedback category.');
-        const urgency = body.urgency === undefined ? 'Normal' : body.urgency;
-        if (!['Normal', 'High', 'Critical'].includes(urgency)) {
-            throw fail(400, 'Choose a valid urgency level.');
-        }
-        const item = {
-            id: randomUUID(),
-            subject,
-            message,
-            category: body.category,
-            urgency,
-            anonymous: body.anonymous === true,
-            author_name: user.name,
-            status: 'Just Submitted',
-            created_at: new Date()
-        };
-        await pool.execute(
-            `INSERT INTO feedback
-             (id, user_id, author_name, anonymous, subject, message, category, urgency, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [item.id, user.id, item.author_name, item.anonymous, item.subject, item.message,
-                item.category, item.urgency, item.status, item.created_at]
-        );
-        return sendJson(response, 201, { feedback: await serializeFeedback(item, user) });
-    }
-
     const voteMatch = pathname.match(/^\/api\/feedback\/([0-9a-f-]+)\/vote$/i);
     if (request.method === 'POST' && voteMatch) {
         const user = await requireUser(request);
@@ -556,11 +615,13 @@ async function serveStatic(request, response, url) {
     const allowedFiles = new Set([
         '/index.html',
         '/admin.html',
+        '/gsu.html',
         '/onboarding.html',
         '/style.css',
         '/onboarding.css',
         '/script.js',
         '/admin.js',
+        '/gsu.js',
         '/onboarding.js',
         '/images/safe-logo.png'
     ]);
