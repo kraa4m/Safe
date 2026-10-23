@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.A.F.E. - Administration Portal</title>
+    
+    <!-- Hide body initially -->
+    <style>
+        body { display: none; }
+    </style>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Route Guard Script -->
+    <script>
+        (async function checkAdminAuth() {
+            try {
+                const res = await fetch('/api/auth/me', { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) throw new Error('Unauthenticated');
+                const data = await res.json();
+                
+                if (!data.user || data.user.role !== 'admin') {
+                    alert('Access Denied: Administrator privileges required.');
+                    window.location.assign('index.html');
+                } else {
+                    const revealBody = () => {
+                        if (document.body) document.body.style.display = 'block';
+                    };
+
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', revealBody);
+                    } else {
+                        revealBody();
+                    }
+                }
+            } catch (err) {
+                window.location.assign('onboarding.html');
+            }
+        })();
+    </script>
+</head>
+<body>
+    <!-- Top Header -->
+    <header class="top-header" id="topHeader">
+        <div class="header-left">
+            <button class="sidebar-toggle-btn mobile-menu-btn" id="sidebarToggleBtn" aria-label="Toggle navigation" title="Toggle navigation">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <a href="#dashboard" class="header-logo-card" title="CSPC S.A.F.E. Admin Portal">
+                <img src="images/safe-logo.png" alt="CSPC S.A.F.E. Logo" class="header-logo-img">
+            </a>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16" y2="16"/></svg>
+            <input type="search" id="adminSearchInput" class="search-input" placeholder="Search feedback by title, category, or author..." autocomplete="off">
+            <button type="button" class="search-clear-btn" id="searchClearBtn" title="Clear search" style="display: none;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <!-- Header Action Controls -->
+        <div class="header-actions">
+            <!-- Dark/Light Theme Toggle -->
+            <button type="button" class="header-action-btn" id="themeToggleBtn" title="Toggle light/dark theme">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+
+            <!-- User Menu Dropdown -->
+            <div class="header-dropdown-container">
+                <button type="button" class="user-avatar" id="userProfileBtn" title="Admin Menu">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+                </button>
+                <div class="dropdown-menu profile-dropdown" id="profileDropdown">
+                    <div class="profile-dropdown-header">
+                        <div class="user-avatar large">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                        <div class="profile-info">
+                            <h4 id="adminDisplayName">S.A.F.E. Administrator</h4>
+                            <p id="adminDisplayEmail">admin@cspc.edu.ph</p>
+                            <span class="role-chip">SYSTEM ADMINISTRATOR</span>
+                        </div>
+                    </div>
+                    <div class="profile-dropdown-links">
+                        <button class="dropdown-link text-danger" id="logoutBtn">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <!-- Sidebar Backdrop -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <span class="sidebar-heading">Admin Controls</span>
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Sidebar">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#manage" class="nav-item active" data-page="manage">
+                    <span class="nav-icon-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </span>
+                    <span class="nav-label">Report Management</span>
+                </a>
+                <a href="#analytics" class="nav-item" data-page="analytics">
+                    <span class="nav-icon-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </span>
+                    <span class="nav-label">Analytics Overview</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user-mini">
+                    <div class="user-avatar mini">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div class="user-meta">
+                        <span class="user-name">Administrator</span>
+                        <span class="user-role">CSPC SAFE Panel</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <main class="dashboard-content">
+
+                <!-- Summary Stat Cards -->
+                <div class="stats-cards-grid">
+                    <div class="card stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">Total Submissions</span>
+                            <span class="stat-icon-wrap bg-blue">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+                            </span>
+                        </div>
+                        <div class="stat-value" id="statTotal">0</div>
+                        <span class="stat-trend neutral">System wide total</span>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">Just Submitted</span>
+                            <span class="stat-icon-wrap bg-amber">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            </span>
+                        </div>
+                        <div class="stat-value" id="statPending">0</div>
+                        <span class="stat-trend neutral">Awaiting action</span>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">In Progress</span>
+                            <span class="stat-icon-wrap bg-teal">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            </span>
+                        </div>
+                        <div class="stat-value" id="statInProgress">0</div>
+                        <span class="stat-trend positive">Active resolutions</span>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">Resolved Rate</span>
+                            <span class="stat-icon-wrap bg-slate">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            </span>
+                        </div>
+                        <div class="stat-value" id="statResolvedRate">0%</div>
+                        <span class="stat-trend positive">Completion rate</span>
+                    </div>
+                </div>
+
+                <!-- VIEW 1: MANAGE REPORTS -->
+                <section class="view-panel active" id="view-manage">
+                    <div class="view-header flex-header">
+                        <div>
+                            <h2>Report & Feedback Management</h2>
+                            <p class="view-subtitle">Review student posts, assign status progression, and send official replies.</p>
+                        </div>
+                        <div class="suggestions-action-bar">
+                            <div class="filter-pill-group">
+                                <button class="filter-pill active" data-filter="all">All</button>
+                                <button class="filter-pill" data-filter="Just Submitted">Submitted</button>
+                                <button class="filter-pill" data-filter="In Progress">In Progress</button>
+                                <button class="filter-pill" data-filter="Resolved">Resolved</button>
+                            </div>
+                            <select id="adminCategoryFilter" class="sort-select">
+                                <option value="all">All Categories</option>
+                                <option value="Facilities">Facilities</option>
+                                <option value="Academic">Academic</option>
+                                <option value="Administrative">Administrative</option>
+                                <option value="Student Life">Student Life</option>
+                                <option value="Cafeteria & Dining">Cafeteria & Dining</option>
+                                <option value="Campus Safety">Campus Safety</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="card settings-card">
+                        <div class="admin-report-list" id="adminReportsList"></div>
+                        <div class="empty-state" id="adminReportsEmpty" style="display: none;">
+                            <div class="empty-icon-wrap">
+                                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            </div>
+                            <h4>No matching reports found</h4>
+                            <p>Try adjusting your category or status filter.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 2: ANALYTICS OVERVIEW -->
+                <section class="view-panel" id="view-analytics" style="display: none;">
+                    <div class="view-header">
+                        <h2>Analytics Breakdown</h2>
+                        <p class="view-subtitle">Distribution of campus suggestions across departments and current completion status.</p>
+                    </div>
+
+                    <div class="bottom-row-grid">
+                        <div class="card chart-card">
+                            <h3 class="chart-title">Status Distribution</h3>
+                            <div class="chart-body">
+                                <div class="chart-canvas-wrapper">
+                                    <canvas id="adminStatusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card chart-card">
+                            <h3 class="chart-title">Category Distribution</h3>
+                            <div class="chart-body">
+                                <div class="chart-canvas-wrapper pie-canvas-wrapper">
+                                    <canvas id="adminCategoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Official Reply / Comments Modal -->
+    <div class="modal-backdrop" id="commentsModalBackdrop">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="modalPostTitle">Discussion & Official Response</h3>
+                    <span class="modal-subtitle">Post official administrative updates to students</span>
+                </div>
+                <button type="button" class="modal-close-btn" id="closeCommentsModalBtn">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="18" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="comments-thread-list" id="commentsThreadList"></div>
+            </div>
+            <div class="modal-footer">
+                <form id="commentPostForm" onsubmit="return false;" class="comment-input-row">
+                    <input type="text" id="commentTextInput" class="form-control" placeholder="Write an official administrative response..." required>
+                    <button type="button" id="postCommentBtn" class="btn btn-primary">Send Response</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast-notification"></div>
+
+    <!-- Admin JS File -->
+    <script src="admin.js"></script>
+</body>
+</html>
