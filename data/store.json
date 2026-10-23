@@ -1,0 +1,36 @@
+{
+  "users": [
+    {
+      "id": "76f05f0e-1c90-4dd9-b459-6c73a2fb6b64",
+      "name": "Shey",
+      "email": "shey@gmail.com",
+      "department": "College of Computer Studies (CCS) - BSIT",
+      "salt": "59f4ebdf3d3791e70e687357414e25e8",
+      "passwordHash": "359c0eb7420c4400174375b96512ac8530e78c72f8aa205b1b915ece15e0ee031d5f92a9892386ef2c8b3a1758f2b6bc6563c85fbf8efc9e3585b584642a1f4a",
+      "createdAt": "2026-10-23T00:07:32.607Z"
+    }
+  ],
+  "sessions": [
+    {
+      "tokenHash": "1de6a0f15acb635c019001c81b930f8d2b70226e11219e81234e5187649838a3",
+      "userId": "76f05f0e-1c90-4dd9-b459-6c73a2fb6b64",
+      "expiresAt": 1793320124902
+    }
+  ],
+  "feedback": [
+    {
+      "id": "6f75715e-7537-4042-bed2-fc87afefdd07",
+      "userId": "76f05f0e-1c90-4dd9-b459-6c73a2fb6b64",
+      "authorName": "Shey",
+      "anonymous": true,
+      "subject": "wifi",
+      "message": "rtryowiwohf n fkuwfru2",
+      "category": "Facilities",
+      "urgency": "Normal",
+      "status": "Just Submitted",
+      "createdAt": "2026-10-23T00:07:57.560Z"
+    }
+  ],
+  "comments": [],
+  "votes": []
+}
