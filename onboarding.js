@@ -35,23 +35,12 @@ function initOnboardingModals() {
     const closeAboutBtn = document.getElementById('closeAboutModal');
     const closeAboutIconBtn = document.getElementById('closeAboutIconBtn');
 
-    const signupPassword = document.getElementById('signupPassword');
-    const signupConfirmPassword = document.getElementById('signupConfirmPassword');
-
-    // Helper function to reset both forms and clear validity/status states
-    const resetAuthForms = () => {
-        if (loginForm) loginForm.reset();
-        if (signupForm) signupForm.reset();
-        if (authFormStatus) authFormStatus.textContent = '';
-        if (signupConfirmPassword) signupConfirmPassword.setCustomValidity('');
-    };
-
     const showAuthForm = (mode) => {
-        resetAuthForms(); // Auto-clear inputs when switching forms or opening
         const isSignup = mode === 'signup';
         loginForm.hidden = isSignup;
         signupForm.hidden = !isSignup;
         authTitle.textContent = isSignup ? 'Create a S.A.F.E. account' : 'Login to S.A.F.E.';
+        authFormStatus.textContent = '';
         if (!authModal.classList.contains('active')) {
             openModal(authModal);
         }
@@ -76,6 +65,8 @@ function initOnboardingModals() {
     document.getElementById('showSignupBtn').addEventListener('click', () => showAuthForm('signup'));
     document.getElementById('showLoginBtn').addEventListener('click', () => showAuthForm('login'));
 
+    const signupPassword = document.getElementById('signupPassword');
+    const signupConfirmPassword = document.getElementById('signupConfirmPassword');
     const validateSignupPassword = () => {
         signupConfirmPassword.setCustomValidity(
             signupConfirmPassword.value && signupConfirmPassword.value !== signupPassword.value
@@ -95,11 +86,12 @@ function initOnboardingModals() {
         try {
             const email = loginForm.elements.email.value.trim().toLowerCase();
             const password = loginForm.elements.password.value;
-            const result = await apiRequest('/api/auth/login', {
+            const { user } = await apiRequest('/api/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ email, password })
             });
             authFormStatus.textContent = 'Login successful. Opening the dashboard...';
+            window.location.assign(getRoleHome(user));
     
             // NEW CODE
             if (result && result.user && result.user.role === 'admin') {
@@ -163,10 +155,7 @@ function initOnboardingModals() {
 
     // Modal Close Triggers
     if (closeAuthBtn) {
-        closeAuthBtn.addEventListener('click', () => {
-            resetAuthForms();
-            closeModal(authModal);
-        });
+        closeAuthBtn.addEventListener('click', () => closeModal(authModal));
     }
 
     if (closeAboutBtn) {
@@ -177,14 +166,11 @@ function initOnboardingModals() {
         closeAboutIconBtn.addEventListener('click', () => closeModal(aboutModal));
     }
 
-    // Click outside modal backdrop to close
+    // Click outside to close
     [authModal, aboutModal].forEach(modal => {
         if (modal) {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {
-                    if (modal === authModal) {
-                        resetAuthForms();
-                    }
                     closeModal(modal);
                 }
             });
@@ -194,13 +180,17 @@ function initOnboardingModals() {
     // Close on Escape key press
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            if (authModal && authModal.classList.contains('active')) {
-                resetAuthForms();
-            }
             closeModal(authModal);
             closeModal(aboutModal);
         }
     });
+}
+
+// Faculty and Guidance accounts open their own dedicated view; everyone else uses the main dashboard.
+function getRoleHome(user) {
+    if (user && user.role === 'faculty') return 'faculty_view.html';
+    if (user && user.role === 'guidance') return 'guidance_view.html';
+    return 'index.html';
 }
 
 function openModal(modal) {
