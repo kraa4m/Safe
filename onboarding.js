@@ -101,10 +101,13 @@ function initOnboardingModals() {
             });
             authFormStatus.textContent = 'Login successful. Opening the dashboard...';
     
+            // NEW CODE
             if (result && result.user && result.user.role === 'admin') {
-                window.location.replace('admin.html');
+            window.location.replace('admin.html');
+            } else if (result && result.user && result.user.role === 'gsu') {
+             window.location.replace('gsu.html');
             } else {
-                window.location.replace('index.html');
+         window.location.replace('index.html');
             }
         } catch (error) {
             console.error('Login failed:', error);
