@@ -86,21 +86,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const matchesStatus = activeStatusFilter === 'all' || item.status === activeStatusFilter;
             const matchesCategory = activeCategoryFilter === 'all' || item.category === activeCategoryFilter;
             const query = searchQuery.toLowerCase();
+            
+
             const matchesSearch = !query || 
                 item.subject.toLowerCase().includes(query) || 
                 item.message.toLowerCase().includes(query) ||
-                item.author.toLowerCase().includes(query) ||
                 item.category.toLowerCase().includes(query);
-
+    
             return matchesStatus && matchesCategory && matchesSearch;
         });
-
+    
         if (filtered.length === 0) {
             reportsList.innerHTML = '';
             reportsEmpty.style.display = 'block';
             return;
         }
-
+    
         reportsEmpty.style.display = 'none';
         reportsList.innerHTML = filtered.map(item => `
             <div class="admin-report-card">
@@ -113,10 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="item-title">${escapeHtml(item.subject)}</h3>
                     <p class="item-description">${escapeHtml(item.message)}</p>
                     <div class="admin-report-author">
-                        Submitted by: <strong>${escapeHtml(item.author)}</strong> • Urgency: <strong>${item.urgency}</strong> • Votes: <strong>${item.votes}</strong>
+                        Urgency: <strong>${item.urgency}</strong> • Votes: <strong>${item.votes}</strong>
                     </div>
                 </div>
-
+    
                 <div class="admin-report-actions">
                     <div>
                         <label class="form-label">Update Status</label>
@@ -133,8 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `).join('');
-
-        // Bind status change listeners
+    
+ 
         document.querySelectorAll('.status-change-select').forEach(select => {
             select.addEventListener('change', async (e) => {
                 const id = e.target.getAttribute('data-id');
@@ -142,10 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 await handleStatusUpdate(id, newStatus);
             });
         });
-
-        // Bind comment modal triggers
+    
         document.querySelectorAll('.open-comments-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', () => {
                 const id = btn.getAttribute('data-id');
                 const title = btn.getAttribute('data-title');
                 openCommentsModal(id, title);
