@@ -102,9 +102,9 @@ function initOnboardingModals() {
             authFormStatus.textContent = 'Login successful. Opening the dashboard...';
     
             if (result && result.user && result.user.role === 'admin') {
-                window.location.assign('admin.html');
+                window.location.replace('admin.html');
             } else {
-                window.location.assign('index.html');
+                window.location.replace('index.html');
             }
         } catch (error) {
             console.error('Login failed:', error);
@@ -135,7 +135,7 @@ function initOnboardingModals() {
                 body: JSON.stringify({ name, email, password })
             });
             authFormStatus.textContent = 'Account created. Opening the dashboard...';
-            window.location.assign('index.html');
+            window.location.replace('index.html');
         } catch (error) {
             console.error('Registration failed:', error);
             authFormStatus.textContent = error instanceof Error
