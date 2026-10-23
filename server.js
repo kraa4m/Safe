@@ -24,9 +24,11 @@ const DB_NAME = process.env.DB_NAME || 'cspc_safe';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ? process.env.ADMIN_EMAIL.trim().toLowerCase() : '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60;
+
 if (!/^[a-zA-Z0-9_]{1,64}$/.test(DB_NAME)) {
     throw new Error('DB_NAME must contain 1-64 letters, numbers, or underscores.');
 }
+
 const CATEGORIES = new Set([
     'Facilities',
     'Academic',
@@ -35,6 +37,7 @@ const CATEGORIES = new Set([
     'Cafeteria & Dining',
     'Campus Safety'
 ]);
+
 const MIME_TYPES = {
     '.css': 'text/css; charset=utf-8',
     '.html': 'text/html; charset=utf-8',
@@ -573,10 +576,20 @@ async function serveStatic(request, response, url) {
         return sendJson(response, 404, { error: 'File not found.' });
     }
     if (!stat.isFile()) return sendJson(response, 404, { error: 'File not found.' });
-    response.writeHead(200, {
-        'Content-Type': MIME_TYPES[path.extname(filePath).toLowerCase()] || 'application/octet-stream',
+    const ext = path.extname(filePath).toLowerCase();
+    const headers = {
+        'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
         'X-Content-Type-Options': 'nosniff'
-    });
+    };
+    
+    // Prevent browser BFCache and disk caching on HTML pages
+    if (ext === '.html') {
+        headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private';
+        headers['Pragma'] = 'no-cache';
+        headers['Expires'] = '0';
+    }
+
+    response.writeHead(200, headers);
     if (request.method === 'HEAD') return response.end();
     fs.createReadStream(filePath).pipe(response);
 }

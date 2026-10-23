@@ -16,32 +16,46 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 
-    <!-- Route Guard Script -->
+    <!-- Admin Portal Route Guard & Navigation Security -->
     <script>
-        (async function checkAdminAuth() {
+        async function checkAdminAuth() {
             try {
-                const res = await fetch('/api/auth/me', { headers: { 'Accept': 'application/json' } });
+                const res = await fetch('/api/auth/me', { 
+                    headers: { 'Accept': 'application/json' },
+                    cache: 'no-store'
+                });
                 if (!res.ok) throw new Error('Unauthenticated');
                 const data = await res.json();
                 
                 if (!data.user || data.user.role !== 'admin') {
                     alert('Access Denied: Administrator privileges required.');
-                    window.location.assign('index.html');
+                    window.location.replace('index.html');
+                    return;
+                }
+    
+                const revealBody = () => {
+                    if (document.body) document.body.style.display = 'block';
+                };
+    
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', revealBody);
                 } else {
-                    const revealBody = () => {
-                        if (document.body) document.body.style.display = 'block';
-                    };
-
-                    if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', revealBody);
-                    } else {
-                        revealBody();
-                    }
+                    revealBody();
                 }
             } catch (err) {
-                window.location.assign('onboarding.html');
+                window.location.replace('onboarding.html');
             }
-        })();
+        }
+    
+        checkAdminAuth();
+    
+        window.addEventListener('pageshow', () => {
+            checkAdminAuth();
+        });
+    
+        window.addEventListener('pagehide', () => {
+            navigator.sendBeacon('/api/auth/logout');
+        });
     </script>
 </head>
 <body>
