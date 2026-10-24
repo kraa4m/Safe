@@ -1,7 +1,5 @@
 require('dotenv').config();
 
-const http = require('node:http');
-const fs = require('node:fs');
 const path = require('node:path');
 const {
     randomBytes,
@@ -11,6 +9,8 @@ const {
     timingSafeEqual
 } = require('node:crypto');
 const { promisify } = require('node:util');
+const express = require('express');
+const ejs = require('ejs');
 const mysql = require('mysql2/promise');
 
 const scrypt = promisify(scryptCallback);
@@ -41,15 +41,6 @@ const CATEGORIES = new Set([
     'Technical Support',
     'Guidance & Personal'
 ]);
-
-const MIME_TYPES = {
-    '.css': 'text/css; charset=utf-8',
-    '.html': 'text/html; charset=utf-8',
-    '.js': 'text/javascript; charset=utf-8',
-    '.png': 'image/png',
-    '.svg': 'image/svg+xml',
-    '.ico': 'image/x-icon'
-};
 
 let pool;
 
@@ -755,73 +746,16 @@ async function handleApi(request, response, url) {
     return sendJson(response, 404, { error: 'API route not found.' });
 }
 
-async function serveStatic(request, response, url) {
-    let pathname;
-    try {
-        pathname = decodeURIComponent(url.pathname);
-    } catch {
-        return sendJson(response, 400, { error: 'Invalid URL path.' });
-    }
-    if (pathname === '/') pathname = '/onboarding.html';
-    const allowedFiles = new Set([
-        '/index.html',
-        '/admin.html',
-        '/gsu.html',
-        '/stakeholder.html',
-        '/faculty.html',
-        '/onboarding.html',
-        '/style.css',
-        '/onboarding.css',
-        '/stakeholder.css',
-        '/faculty.css',
-        '/script.js',
-        '/admin.js',
-        '/gsu.js',
-        '/stakeholders.js',
-        '/faculty.js',
-        '/onboarding.js',
-        '/images/safe-logo.png'
-    ]);
-    if (!allowedFiles.has(pathname)) return sendJson(response, 404, { error: 'File not found.' });
-    const filePath = path.resolve(ROOT, `.${pathname}`);
-    if (!filePath.startsWith(`${ROOT}${path.sep}`)) {
-        return sendJson(response, 403, { error: 'Forbidden.' });
-    }
-    let stat;
-    try {
-        stat = await fs.promises.stat(filePath);
-    } catch {
-        return sendJson(response, 404, { error: 'File not found.' });
-    }
-    if (!stat.isFile()) return sendJson(response, 404, { error: 'File not found.' });
-    const ext = path.extname(filePath).toLowerCase();
-    const headers = {
-        'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
-        'X-Content-Type-Options': 'nosniff'
-    };
-    
-    // Prevent browser BFCache and disk caching on HTML pages
-    if (ext === '.html') {
-        headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private';
-        headers['Pragma'] = 'no-cache';
-        headers['Expires'] = '0';
-    }
+const app = express();
+app.disable('x-powered-by');
+app.engine('html', ejs.renderFile);
+app.set('view engine', 'html');
+app.set('views', ROOT);
 
-    response.writeHead(200, headers);
-    if (request.method === 'HEAD') return response.end();
-    fs.createReadStream(filePath).pipe(response);
-}
-
-const server = http.createServer(async (request, response) => {
-    const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
+app.use('/api', async (request, response) => {
+    const url = new URL(request.originalUrl, `http://${request.headers.host || 'localhost'}`);
     try {
-        if (url.pathname.startsWith('/api/')) {
-            await handleApi(request, response, url);
-        } else if (request.method === 'GET' || request.method === 'HEAD') {
-            await serveStatic(request, response, url);
-        } else {
-            sendJson(response, 405, { error: 'Method not allowed.' }, { Allow: 'GET, HEAD' });
-        }
+        await handleApi(request, response, url);
     } catch (error) {
         if (error.status) return sendJson(response, error.status, { error: error.message });
         console.error('Request failed:', error);
@@ -829,8 +763,84 @@ const server = http.createServer(async (request, response) => {
     }
 });
 
+const pageRoutes = {
+    '/': { template: 'onboarding.html' },
+    '/index.html': { template: 'index.html', roles: ['user', 'gsu'] },
+    '/admin.html': { template: 'admin.html', roles: ['admin'] },
+    '/gsu.html': { template: 'gsu.html', roles: ['gsu', 'admin'] },
+    '/stakeholder.html': { template: 'stakeholder.html', roles: ['mict', 'guidance'] },
+    '/faculty.html': { template: 'faculty.html', roles: ['faculty'] },
+    '/onboarding.html': { template: 'onboarding.html' }
+};
+
+const rolePages = {
+    admin: '/admin.html',
+    gsu: '/gsu.html',
+    faculty: '/faculty.html',
+    mict: '/stakeholder.html',
+    guidance: '/stakeholder.html',
+    user: '/index.html'
+};
+
+app.get(Object.keys(pageRoutes), async (request, response, next) => {
+    response.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        Pragma: 'no-cache',
+        Expires: '0',
+        'X-Content-Type-Options': 'nosniff'
+    });
+    const page = pageRoutes[request.path];
+    if (page.roles) {
+        const user = await getUser(request);
+        if (!user) return response.redirect(303, '/onboarding.html');
+        if (!page.roles.includes(user.role)) {
+            return response.redirect(303, rolePages[user.role] || '/onboarding.html');
+        }
+    }
+    response.render(page.template, {}, (error, html) => {
+        if (error) return next(error);
+        response.send(html);
+    });
+});
+
+const staticFiles = [
+    '/style.css',
+    '/onboarding.css',
+    '/stakeholder.css',
+    '/faculty.css',
+    '/script.js',
+    '/admin.js',
+    '/gsu.js',
+    '/stakeholders.js',
+    '/faculty.js',
+    '/onboarding.js',
+    '/images/safe-logo.png'
+];
+
+app.get(staticFiles, (request, response, next) => {
+    const filePath = path.join(ROOT, request.path.slice(1));
+    response.set('X-Content-Type-Options', 'nosniff');
+    response.sendFile(filePath, error => {
+        if (error) next(error);
+    });
+});
+
+app.use((request, response) => {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+        return sendJson(response, 405, { error: 'Method not allowed.' }, { Allow: 'GET, HEAD' });
+    }
+    return sendJson(response, 404, { error: 'File not found.' });
+});
+
+app.use((error, request, response, next) => {
+    if (response.headersSent) return next(error);
+    if (error.status === 404) return sendJson(response, 404, { error: 'File not found.' });
+    console.error('Request failed:', error);
+    return sendJson(response, 500, { error: 'An unexpected server error occurred.' });
+});
+
 initializeDatabase().then(() => {
-    server.listen(PORT, () => {
+    app.listen(PORT, () => {
         console.log(`CSPC S.A.F.E. server listening on http://localhost:${PORT}`);
         console.log(`Connected to MySQL database "${DB_NAME}" at ${DB_HOST}:${DB_PORT}`);
     });

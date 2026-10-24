@@ -2,7 +2,7 @@
 
 ## Run locally
 
-Use Node.js 18 or newer with XAMPP's MySQL module running.
+Use Node.js 18 or newer with XAMPP's MySQL module running. The server uses Express, and its page routes render the existing HTML pages with EJS while preserving their current URLs.
 
 ```sh
 npm install
@@ -12,6 +12,8 @@ npm start
 Open [http://localhost:3000](http://localhost:3000). Use the onboarding page to create an account; dashboard access requires signing in.
 
 `npm install` installs the Node.js dependencies. Database setup runs when `npm start` launches the server: it creates the `cspc_safe` database and required tables if they do not exist, and applies additive migrations to existing databases. This reproduces the database schema, not another installation's users, feedback, comments, or other private records; each installation keeps its own data.
+
+Protected dashboards verify the signed-in user's session and role on the server before rendering. The browser-side route guards provide navigation behavior, while API endpoints also enforce their own role checks.
 
 By default, the backend connects to XAMPP MySQL at `127.0.0.1:3306` as `root` with an empty password. Configure a different XAMPP installation in a `.env` file:
 
