@@ -30,12 +30,19 @@ function initOnboardingModals() {
     const loginForm = document.getElementById('loginForm');
     const signupForm = document.getElementById('signupForm');
     const authFormStatus = document.getElementById('authFormStatus');
-
+    const resetAuthForms = () => {
+        if (loginForm) loginForm.reset();
+        if (signupForm) signupForm.reset();
+        if (authFormStatus) authFormStatus.textContent = '';
+    };
     const aboutModal = document.getElementById('aboutModal');
     const closeAboutBtn = document.getElementById('closeAboutModal');
     const closeAboutIconBtn = document.getElementById('closeAboutIconBtn');
 
+
+
     const showAuthForm = (mode) => {
+        resetAuthForms();
         const isSignup = mode === 'signup';
         loginForm.hidden = isSignup;
         signupForm.hidden = !isSignup;
@@ -195,4 +202,12 @@ function closeModal(modal) {
     modal.classList.remove('active');
     modal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+
+    // Clear login & signup forms whenever authModal closes
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const authFormStatus = document.getElementById('authFormStatus');
+    if (loginForm) loginForm.reset();
+    if (signupForm) signupForm.reset();
+    if (authFormStatus) authFormStatus.textContent = '';
 }
