@@ -11,6 +11,7 @@ let reportsStatusChart = null;
 let activeCommentFeedbackId = null;
 let backendFeedback = [];
 let currentUserIsAdmin = false;
+let lastNavigationHash = '';
 const ADMIN_STATUSES = ['Just Submitted', 'Under Review', 'In Progress', 'Approved', 'Resolved', 'Rejected'];
 const FEEDBACK_CATEGORIES = [
     'Facilities',
@@ -277,10 +278,13 @@ function initNavigationRouter() {
         });
     }
 
-    window.addEventListener('hashchange', () => {
+    const handleLocationChange = () => {
+        if (window.location.hash === lastNavigationHash) return;
         const hashPage = window.location.hash.replace('#', '') || 'dashboard';
         switchView(hashPage, false);
-    });
+    };
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
 }
 
 function switchView(viewName, updateHash = true) {
@@ -302,9 +306,13 @@ function switchView(viewName, updateHash = true) {
     };
     if (pageTitle) pageTitle.textContent = titleMap[activeView] || 'Dashboard';
 
-    if (updateHash) {
-        history.replaceState(null, null, `#${activeView}`);
+    const nextHash = `#${activeView}`;
+    if (updateHash && window.location.hash !== nextHash) {
+        history.pushState({ view: activeView }, '', nextHash);
+    } else if (!updateHash && window.location.hash !== nextHash) {
+        history.replaceState({ view: activeView }, '', nextHash);
     }
+    lastNavigationHash = nextHash;
 
     document.querySelectorAll('.nav-item').forEach(nav => {
         nav.classList.toggle('active', nav.getAttribute('data-page') === activeView);
@@ -1516,10 +1524,10 @@ function initSettingsActions() {
         logoutBtn.addEventListener('click', async () => {
             try {
                 await apiRequest('/api/auth/logout', { method: 'POST' });
+                window.location.replace('onboarding.html');
             } catch (error) {
                 console.error('Unable to sign out:', error);
-            } finally {
-                window.location.replace('onboarding.html');
+                showToast(error.message || 'Unable to sign out. Please try again.');
             }
         });
     }

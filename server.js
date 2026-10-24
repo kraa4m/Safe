@@ -41,6 +41,64 @@ const CATEGORIES = new Set([
     'Technical Support',
     'Guidance & Personal'
 ]);
+const SENSITIVE_CATEGORIES = new Set(['Guidance & Personal', 'Sensitive / Personal']);
+
+// One account per stakeholder office. Students self-register with the default 'user' role.
+const STAFF_ROLES = new Set(['admin', 'mict', 'guidance', 'gsu']);
+const ROLE_LABELS = {
+    user: 'Student',
+    faculty: 'Faculty',
+    admin: 'School Administration',
+    mict: 'MICT & ICTU',
+    guidance: 'Guidance Office',
+    gsu: 'General Service Unit'
+};
+// Which office receives each category. Guidance categories are always private.
+const CATEGORY_OWNER = {
+    'Facilities': 'gsu',
+    'Academic': 'admin',
+    'Administrative': 'admin',
+    'Student Life': 'admin',
+    'Cafeteria & Dining': 'admin',
+    'Campus Safety': 'admin',
+    'Technical Support': 'mict',
+    'Technical / System': 'mict',
+    'Guidance & Personal': 'guidance',
+    'Sensitive / Personal': 'guidance'
+};
+const STAKEHOLDER_ACCOUNTS = [
+    { role: 'faculty', prefix: 'FACULTY', name: 'CSPC Faculty', department: 'CSPC Faculty', email: 'faculty@cspc.edu.ph' },
+    { role: 'mict', prefix: 'MICT', name: 'MICT & ICTU', department: 'MICT & ICTU', email: 'mict@cspc.edu.ph' },
+    { role: 'guidance', prefix: 'GUIDANCE', name: 'Guidance Office', department: 'Guidance Office', email: 'guidance@cspc.edu.ph' },
+    { role: 'gsu', prefix: 'GSU', name: 'General Service Unit', department: 'General Service Unit', email: 'gsu@cspc.edu.ph' }
+];
+
+// Dedicated pages per role. The server only serves them to the matching role.
+const ROLE_PAGES = {
+    '/faculty.html': 'faculty',
+    '/guidance.html': 'guidance'
+};
+
+function roleHome(user) {
+    if (user && user.role === 'faculty') return '/faculty.html';
+    if (user && user.role === 'guidance') return '/guidance.html';
+    if (user && user.role === 'admin') return '/admin.html';
+    if (user && user.role === 'gsu') return '/gsu.html';
+    if (user && user.role === 'mict') return '/stakeholder.html';
+    return '/index.html';
+}
+
+function canHandle(user, category) {
+    if (!user || !STAFF_ROLES.has(user.role)) return false;
+    if (user.role === 'admin') return !SENSITIVE_CATEGORIES.has(category);
+    return CATEGORY_OWNER[category] === user.role;
+}
+
+function canView(user, item) {
+    if (!item.is_confidential && !SENSITIVE_CATEGORIES.has(item.category)) return true;
+    if (!user) return false;
+    return item.user_id === user.id || user.role === 'guidance';
+}
 
 let pool;
 
@@ -108,11 +166,18 @@ async function requireUser(request) {
     return user;
 }
 
+async function requireStaff(request) {
+    const user = await requireUser(request);
+    if (!STAFF_ROLES.has(user.role)) throw fail(403, 'Staff access is required.');
+    return user;
+}
+
 async function requireAdmin(request) {
     const user = await requireUser(request);
     if (user.role !== 'admin') throw fail(403, 'Administrator access is required.');
     return user;
 }
+
 async function requireGsuOrAdmin(request) {
     const user = await requireUser(request);
     if (user.role !== 'gsu' && user.role !== 'admin') {
@@ -135,7 +200,8 @@ function publicUser(user) {
         name: user.name,
         email: user.email,
         department: user.department || '',
-        role: user.role || 'user'
+        role: user.role || 'user',
+        roleLabel: ROLE_LABELS[user.role || 'user'] || 'Student'
     };
 }
 
@@ -188,7 +254,7 @@ async function serializeFeedback(item, user) {
         subject: item.subject,
         message: item.message,
         category: item.category,
-        urgency: item.urgency,
+        urgency: item.urgency || 'Normal',
         anonymous: Boolean(item.anonymous),
         confidential: Boolean(item.is_confidential),
         author: item.anonymous ? 'Anonymous Student' : item.author_name,
@@ -555,8 +621,8 @@ async function handleApi(request, response, url) {
         const subject = validateText(body.subject, 'Subject', 100);
         const message = validateText(body.message, 'Message', 800);
         const category = validateText(body.category, 'Category', 40);
-        const urgency = body.urgency ? validateText(body.urgency, 'Urgency', 20) : 'Low';
-        const anonymous = Boolean(body.anonymous);
+        const urgency = body.urgency ? validateText(body.urgency, 'Urgency', 20) : 'Normal';
+        const anonymous = body.anonymous === true;
 
         if (!CATEGORIES.has(category)) {
             throw fail(400, 'Please select a valid feedback category.');
@@ -606,7 +672,6 @@ async function handleApi(request, response, url) {
         }
         const body = await readJson(request);
         const status = validateText(body.status, 'Status', 40);
-    
         if (!['Just Submitted', 'Under Review', 'In Progress', 'Approved', 'Resolved', 'Rejected'].includes(status)) {
             throw fail(400, 'Choose a valid report status.');
         }
@@ -630,15 +695,18 @@ async function handleApi(request, response, url) {
                 (user.role === 'guidance' && !item.is_confidential))) {
             throw fail(403, 'Your account cannot manage reports in this category.');
         }
-    
-        const [result] = await pool.execute(
+        if (!canHandle(user, item.category) ||
+            (user.role === 'guidance' && !SENSITIVE_CATEGORIES.has(item.category))) {
+            throw fail(403, 'Your account cannot manage reports in this category.');
+        }
+
+        await pool.execute(
             'UPDATE feedback SET status = ? WHERE id = ?',
             [status, statusMatch[1]]
         );
-    
-        if (!result.affectedRows) throw fail(404, 'Feedback not found.');
         return sendJson(response, 200, { id: statusMatch[1], status });
     }
+
     const voteMatch = pathname.match(/^\/api\/feedback\/([0-9a-f-]+)\/vote$/i);
     if (request.method === 'POST' && voteMatch) {
         const user = await requireUser(request);
@@ -844,11 +912,8 @@ initializeDatabase().then(() => {
         console.log(`CSPC S.A.F.E. server listening on http://localhost:${PORT}`);
         console.log(`Connected to MySQL database "${DB_NAME}" at ${DB_HOST}:${DB_PORT}`);
     });
-}).catch(error => {
-    console.error(
-        `Unable to connect to XAMPP MySQL at ${DB_HOST}:${DB_PORT}. ` +
-        'Start MySQL in the XAMPP Control Panel and check DB_HOST, DB_PORT, DB_USER, and DB_PASSWORD.'
-    );
-    console.error(error);
+}).catch(async error => {
+    console.error('Unable to initialize S.A.F.E.:', error);
+    if (pool) await pool.end();
     process.exitCode = 1;
 });

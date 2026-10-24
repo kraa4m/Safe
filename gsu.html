@@ -62,14 +62,14 @@
     <!-- Top Header -->
     <header class="top-header" id="topHeader">
         <div class="header-left">
-            <button class="sidebar-toggle-btn mobile-menu-btn" id="sidebarToggleBtn" aria-label="Toggle navigation" title="Toggle navigation">
+            <button type="button" class="sidebar-toggle-btn mobile-menu-btn" id="sidebarToggleBtn" aria-label="Toggle navigation" title="Toggle navigation" aria-expanded="false" aria-controls="sidebar">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
                     <line x1="3" y1="6" x2="21" y2="6"/>
                     <line x1="3" y1="12" x2="21" y2="12"/>
                     <line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
             </button>
-            <a href="#dashboard" class="header-logo-card" title="CSPC S.A.F.E. GSU Portal">
+            <a href="#manage" class="header-logo-card" id="homeNavLink" title="CSPC S.A.F.E. GSU Portal">
                 <img src="images/safe-logo.png" alt="CSPC S.A.F.E. Logo" class="header-logo-img">
             </a>
         </div>
@@ -125,13 +125,13 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
                 <span class="sidebar-heading">GSU Controls</span>
-                <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Sidebar">
+                <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Sidebar">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="18" x2="18" y2="18"/></svg>
                 </button>
             </div>
 
             <nav class="sidebar-nav">
-                <a href="#manage" class="nav-item active" data-page="manage">
+                <a href="#manage" class="nav-item active" data-page="manage" aria-current="page">
                     <span class="nav-icon-box">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                     </span>
@@ -214,7 +214,7 @@
                     <div class="view-header flex-header">
                         <div>
                             <h2>GSU Report & Feedback Management</h2>
-                            <p class="view-subtitle">Review reports under Facilities, Cafeteria & Dining, and Campus Safety.</p>
+                            <p class="view-subtitle">Receive and resolve facilities-related feedback.</p>
                         </div>
                         <div class="suggestions-action-bar">
                             <div class="filter-pill-group">
@@ -224,10 +224,8 @@
                                 <button class="filter-pill" data-filter="Resolved">Resolved</button>
                             </div>
                             <select id="gsuCategoryFilter" class="sort-select">
-                                <option value="all">All GSU Categories</option>
+                                <option value="all">All Facilities Reports</option>
                                 <option value="Facilities">Facilities</option>
-                                <option value="Cafeteria & Dining">Cafeteria & Dining</option>
-                                <option value="Campus Safety">Campus Safety</option>
                             </select>
                         </div>
                     </div>
@@ -245,7 +243,7 @@
                 </section>
 
                 <!-- VIEW 2: ANALYTICS OVERVIEW -->
-                <section class="view-panel" id="view-analytics" style="display: none;">
+                <section class="view-panel" id="view-analytics">
                     <div class="view-header">
                         <h2>GSU Analytics Breakdown</h2>
                         <p class="view-subtitle">Distribution of GSU suggestions across assigned categories and resolution status.</p>

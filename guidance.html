@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.A.F.E. - Guidance Office</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="guidance.css">
+</head>
+<body>
+    <header class="top-header" id="topHeader">
+        <div class="header-left">
+            <button class="sidebar-toggle-btn mobile-menu-btn" id="sidebarToggleBtn" type="button" aria-label="Toggle navigation" title="Toggle navigation" aria-expanded="false" aria-controls="sidebar">
+                <svg class="hamburger-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <a href="guidance.html" class="header-logo-card" title="CSPC S.A.F.E. Guidance Office" aria-label="CSPC S.A.F.E. Guidance Office">
+                <img src="images/safe-logo.png" alt="CSPC S.A.F.E. Logo" class="header-logo-img">
+            </a>
+        </div>
+
+        <div class="header-actions">
+            <button type="button" class="header-action-btn theme-toggle-btn" id="themeToggleBtn" title="Toggle light/dark theme" aria-label="Switch to dark mode" aria-pressed="false"></button>
+
+            <div class="header-dropdown-container">
+                <button type="button" class="user-avatar" id="userProfileBtn" title="Account menu" aria-label="Account menu" aria-expanded="false" aria-controls="profileDropdown">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+                </button>
+                <div class="dropdown-menu profile-dropdown" id="profileDropdown">
+                    <div class="profile-dropdown-header">
+                        <div class="user-avatar large">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                        <div class="profile-info">
+                            <h4 id="profileDisplayName">Guidance Office</h4>
+                            <p id="profileDisplayEmail">guidance@cspc.edu.ph</p>
+                            <span class="role-chip" id="profileDepartment">Guidance Office</span>
+                        </div>
+                    </div>
+                    <div class="profile-dropdown-links">
+                        <a href="#" class="dropdown-link" id="editProfileLink">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            Edit Profile
+                        </a>
+                        <a href="index.html" class="dropdown-link">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                            Main Dashboard
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-link text-danger" id="logoutBtn" type="button">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+        <aside class="sidebar" id="sidebar" aria-label="Guidance navigation">
+            <div class="sidebar-brand">
+                <div class="brand-text-block">
+                    <span class="sidebar-heading">Guidance Menu</span>
+                </div>
+                <button class="sidebar-close-btn" id="sidebarCloseBtn" type="button" aria-label="Close sidebar" title="Close sidebar">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <nav class="sidebar-nav" aria-label="Guidance features">
+                <a href="#dashboard" class="nav-item active" data-guidance-view="dashboard" aria-current="page">
+                    <span class="nav-icon-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                    </span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="#caseList" class="nav-item" data-guidance-view="all">
+                    <span class="nav-icon-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+                    </span>
+                    <span class="nav-label">All Cases</span>
+                    <span class="guidance-nav-count" id="navCountAll">0</span>
+                </a>
+                <a href="#caseList" class="nav-item" data-guidance-view="new">
+                    <span class="nav-icon-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                    </span>
+                    <span class="nav-label">New Cases</span>
+                    <span class="guidance-nav-count" id="navCountNew">0</span>
+                </a>
+                <a href="#caseList" class="nav-item" data-guidance-view="urgent">
+                    <span class="nav-icon-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 3 10 18H2L12 3z"/><path d="M12 9v5M12 17h.01"/></svg>
+                    </span>
+                    <span class="nav-label">Urgent Cases</span>
+                    <span class="guidance-nav-count" id="navCountUrgent">0</span>
+                </a>
+                <a href="#caseList" class="nav-item" data-guidance-view="resolved">
+                    <span class="nav-icon-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+                    </span>
+                    <span class="nav-label">Resolved Cases</span>
+                    <span class="guidance-nav-count" id="navCountResolved">0</span>
+                </a>
+                <button type="button" class="nav-item guidance-nav-button" data-guidance-action="profile">
+                    <span class="nav-icon-box">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>
+                    </span>
+                    <span class="nav-label">Account Settings</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user-mini">
+                    <div class="user-avatar mini">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <div class="user-meta">
+                        <span class="user-name" id="sidebarDisplayName">Guidance Office</span>
+                        <span class="user-role" id="sidebarDisplayRole">Guidance Office</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <div class="main-wrapper">
+            <main class="dashboard-content">
+                <div class="role-main" id="dashboard">
+                    <div class="view-header flex-header">
+                        <div>
+                            <h2>Guidance Office</h2>
+                            <p class="view-subtitle">Private Guidance &amp; Personal reports routed to the Guidance Office. Update case statuses and send official replies.</p>
+                        </div>
+                    </div>
+
+                    <div class="privacy-banner" role="note">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                        <span>These reports are private and are not shown in the public feed or other offices' queues. Only the submitter and authorized Guidance Office staff can access them. Anonymous reports do not show the submitter's name. This portal is not an emergency service and may not be monitored continuously; contact local emergency services or campus security directly if anyone is in immediate danger.</span>
+                    </div>
+
+                    <div class="stats-cards-grid">
+                        <div class="card stat-card">
+                            <div class="stat-header"><span class="stat-label">Total Cases</span></div>
+                            <div class="stat-value" id="statTotal">0</div>
+                            <span class="stat-trend neutral"><span>routed to Guidance</span></span>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-header"><span class="stat-label">New</span></div>
+                            <div class="stat-value" id="statNew">0</div>
+                            <span class="stat-trend neutral"><span>awaiting first review</span></span>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-header"><span class="stat-label">Open Urgent</span></div>
+                            <div class="stat-value" id="statUrgent">0</div>
+                            <span class="stat-trend neutral"><span>High / Critical, not resolved</span></span>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-header"><span class="stat-label">Resolved</span></div>
+                            <div class="stat-value" id="statResolved">0</div>
+                            <span class="stat-trend positive"><span>closed cases</span></span>
+                        </div>
+                    </div>
+
+                    <div class="role-toolbar">
+                        <input type="search" id="caseSearch" class="form-control" placeholder="Search cases..." autocomplete="off" aria-label="Search cases">
+                        <div class="select-wrapper">
+                            <select id="statusFilter" class="form-control form-select" aria-label="Filter by status">
+                                <option value="all">All statuses</option>
+                                <option value="Just Submitted">Just Submitted</option>
+                                <option value="Under Review">Under Review</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Resolved">Resolved</option>
+                                <option value="Rejected">Rejected</option>
+                            </select>
+                            <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                        <div class="select-wrapper">
+                            <select id="urgencyFilter" class="form-control form-select" aria-label="Filter by urgency">
+                                <option value="all">All urgency levels</option>
+                                <option value="Critical">Critical</option>
+                                <option value="High">High</option>
+                                <option value="Normal">Normal</option>
+                            </select>
+                            <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                        <div class="select-wrapper">
+                            <select id="sortOrder" class="form-control form-select" aria-label="Sort cases">
+                                <option value="urgent">Most urgent first</option>
+                                <option value="newest">Newest first</option>
+                                <option value="oldest">Oldest first</option>
+                            </select>
+                            <svg class="select-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="refreshBtn">Refresh</button>
+                        <span class="refresh-note" id="refreshNote"></span>
+                    </div>
+
+                    <div class="case-list" id="caseList"></div>
+                    <div class="empty-state" id="caseEmpty" hidden>
+                        <h4>No cases to show</h4>
+                        <p>Private Guidance &amp; Personal reports will appear here when submitted.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Profile Editor Modal -->
+    <div class="modal-backdrop" id="profileEditorModal" role="dialog" aria-modal="true" aria-labelledby="profileEditorTitle" aria-hidden="true">
+        <div class="modal-dialog profile-editor-dialog">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="profileEditorTitle">Guidance Office Profile</h3>
+                    <span class="modal-subtitle">Edit account details</span>
+                </div>
+                <button type="button" class="modal-close-btn" id="closeProfileEditorBtn" aria-label="Close profile editor">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body profile-editor-body">
+                <form id="profileForm" onsubmit="return false;">
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label class="form-label" for="settingName">Name</label>
+                            <input type="text" id="settingName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="settingEmail">Email Address</label>
+                            <input type="email" id="settingEmail" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-row-2col">
+                        <div class="form-group">
+                            <label class="form-label" for="settingDept">Office / Department</label>
+                            <input type="text" id="settingDept" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="settingRole">Account Role</label>
+                            <input type="text" id="settingRole" class="form-control" value="CSPC Guidance Office" readonly>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="saveProfileBtn" class="btn btn-primary">Save Profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Case Thread / Official Reply Modal -->
+    <div class="modal-backdrop" id="commentsModalBackdrop">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="modalPostTitle">Case Thread</h3>
+                    <span class="modal-subtitle">Replies from this office are marked Official</span>
+                </div>
+                <button type="button" class="modal-close-btn" id="closeCommentsModalBtn" aria-label="Close thread">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="comments-thread-list" id="commentsThreadList"></div>
+            </div>
+            <div class="modal-footer">
+                <form id="commentPostForm" onsubmit="return false;" class="comment-input-row">
+                    <input type="text" id="commentTextInput" class="form-control" placeholder="Write an official reply..." maxlength="500" required>
+                    <button type="button" id="postCommentBtn" class="btn btn-primary">Reply</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastNotification" class="toast-notification"></div>
+
+    <script src="guidance.js"></script>
+</body>
+</html>
