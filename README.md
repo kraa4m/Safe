@@ -1,52 +1,43 @@
-# CSPC S.A.F.E.
+# CSPC S.A.F.E. (Suggestions And Feedback Engagement)
 
-## Run locally
+CSPC S.A.F.E. is a web-based campus feedback and issue management portal designed for Camarines Sur Polytechnic Colleges. It enables students to submit feedback, track issue resolution, upvote suggestions, and engage in campus community discussions, while providing dedicated dashboards for administrators and department units (like the General Services Unit - GSU).
 
-Use Node.js 18 or newer with XAMPP's MySQL module running. The server uses Express, and its page routes render the existing HTML pages with EJS while preserving their current URLs.
+---
 
-```sh
-npm install
-npm start
-```
+## Features
 
-Open [http://localhost:3000](http://localhost:3000). Use the onboarding page to create an account; dashboard access requires signing in.
+### Student & Community Portal
+- **Feedback & Report Submission:** Submit feedback with subject lines, category selection, urgency levels, and optional anonymity.
+- **Interactive Community Feed:** Upvote community posts, view official status updates, and participate in comment threads.
+- **Dark / Light Theme Toggle:** Customizable visual theme with persistent local storage settings.
+- **Analytics Overview:** Visual representation of campus feedback metrics, resolution trends, and category distribution.
 
-`npm install` installs the Node.js dependencies. Database setup runs when `npm start` launches the server: it creates the `cspc_safe` database and required tables if they do not exist, and applies additive migrations to existing databases. This reproduces the database schema, not another installation's users, feedback, comments, or other private records; each installation keeps its own data.
+### Role-Based Portals & Access Control
+- **Admin Dashboard (`/admin.html`):** Full administrative control over all submitted reports, status progression, user accounts, and comment moderation.
+- **GSU Dashboard (`/gsu.html`):** Specialized unit dashboard restricted specifically to GSU-related categories (**Facilities**, **Cafeteria & Dining**, and **Campus Safety**).
+- **Automated Routing:** Secure session-based authentication routing users directly to their designated dashboard (`index.html`, `admin.html`, or `gsu.html`).
 
-Protected dashboards verify the signed-in user's session and role on the server before rendering. The browser-side route guards provide navigation behavior, while API endpoints also enforce their own role checks.
+---
 
-By default, the backend connects to XAMPP MySQL at `127.0.0.1:3306` as `root` with an empty password. Configure a different XAMPP installation in a `.env` file:
+## Tech Stack
 
-```env
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=cspc_safe
-PORT=3000
-ADMIN_EMAIL=
-ADMIN_PASSWORD=
-GSU_EMAIL=
-GSU_PASSWORD=
-```
+- **Backend:** Node.js (Vanilla HTTP module), MySQL (`mysql2` connection pooling), Crypto (`scrypt` password hashing)
+- **Frontend:** Vanilla HTML5, CSS3, JavaScript (ES6+), Chart.js (Analytics Data Visualization)
+- **Database:** MySQL / MariaDB (XAMPP compatible)
 
-Set both `ADMIN_EMAIL` and `ADMIN_PASSWORD` to bootstrap the administrator account; the password must be at least 12 characters. Restart the server and sign in with those credentials. Administrators can then create Faculty, GSU, MICT & ICTU, and Guidance Office accounts from the Stakeholder Accounts section of the Admin Dashboard. Enter the stakeholder's name, sign-in email, role, and an initial password of at least 12 characters, then share those credentials securely. The password is never shown again after creation. Faculty sign in to a separate portal to submit Academic and Administrative feedback and track their reports. MICT & ICTU can manage Technical Support reports. The Guidance Office can manage confidential Guidance & Personal submissions; these are excluded from public, GSU, and administrator feedback lists and are visible only to the submitter and Guidance. Role checks are enforced by the API as well as the interface.
+---
 
-`GSU_EMAIL` and `GSU_PASSWORD` remain optional for deployments that provision a GSU account at startup; accounts created by an administrator do not require these settings. The database startup migration adds the confidential-feedback flag to existing installations. Selecting the Guidance & Personal category automatically makes a submission private.
+## Getting Started & Prerequisites
 
-You can also open phpMyAdmin at [http://localhost/phpmyadmin](http://localhost/phpmyadmin) to inspect the database and tables. The MySQL account needs permission to create the database and tables. Passwords are stored as salted scrypt hashes; session tokens are stored as hashes. Do not expose this development server directly to the public internet; deploy behind HTTPS and use production-grade database credentials and configuration.
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18.0.0 or higher)
+- [XAMPP](https://www.apachefriends.org/) (or a running local MySQL instance on port 3306)
 
-## API
+---
 
-- `POST /api/auth/register` — create an account and sign in
-- `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
-- `PATCH /api/profile` — update the signed-in profile
-- `GET /api/admin/feedback` — list reports (admin only)
-- `PATCH /api/admin/feedback/:id/status` — update a report status (admin only)
-- `GET /api/admin/stakeholders`, `POST /api/admin/stakeholders` — list and create stakeholder accounts (admin only)
-- `GET /api/stakeholder/feedback` — list the signed-in stakeholder's reports or assigned queue
-- `PATCH /api/stakeholder/feedback/:id/status` — update an assigned stakeholder report
-- `GET /api/feedback`, `POST /api/feedback`
-- `POST /api/feedback/:id/vote` — toggle the current account's vote
-- `GET /api/feedback/:id/comments`, `POST /api/feedback/:id/comments`
-- `GET /api/health` — server health check
+## Installation & Setup
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/kraa4m/Safe
+   cd CSPC-SAFE
