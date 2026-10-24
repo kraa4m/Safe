@@ -328,10 +328,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('refreshStakeholdersButton')
             ?.addEventListener('click', loadStakeholderAccounts);
         const roleDescriptions = {
-            faculty: 'Faculty can submit feedback about academic and administrative processes.',
-            gsu: 'The General Service Unit receives and resolves facilities-related feedback.',
-            mict: 'MICT & ICTU maintains and supports S.A.F.E. and handles technical or system support reports.',
-            guidance: 'The Guidance Office handles sensitive or personal complaints in a restricted queue.'
+            faculty: 'Faculty accounts can submit academic and administrative feedback.',
+            gsu: 'GSU accounts can review facilities, dining, and campus safety reports.',
+            mict: 'MICT & ICTU accounts can manage technical support reports.',
+            guidance: 'Guidance accounts can access confidential personal submissions.'
         };
         document.getElementById('stakeholderRole')?.addEventListener('change', event => {
             document.getElementById('stakeholderRoleHint').textContent =
@@ -370,9 +370,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Sidebar Navigation
         document.querySelectorAll('.sidebar-nav .nav-item[data-page]').forEach(item => {
-            item.addEventListener('click', event => {
-                event.preventDefault();
-                navigateToView(item.dataset.page);
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetPage = item.getAttribute('data-page');
+                
+                document.querySelectorAll('.sidebar-nav .nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+
+                document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
+                const activePanel = document.getElementById(`view-${targetPage}`);
+                if (activePanel) activePanel.classList.add('active');
+                document.getElementById('adminReportSummary').hidden = targetPage === 'accounts';
+                if (targetPage === 'accounts') loadStakeholderAccounts();
+
                 closeSidebar();
             });
         });
