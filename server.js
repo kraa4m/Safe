@@ -743,10 +743,12 @@ async function handleApi(request, response, url) {
         } finally {
             connection.release();
         }
-        const [[result]] = await pool.execute(
+        const [rows] = await pool.execute(
             'SELECT COUNT(*) AS count FROM votes WHERE feedback_id = ?',
             [voteMatch[1]]
         );
+        const count = rows[0] ? rows[0].count : 0;
+        return sendJson(response, 200, { votes: Number(count), voted });
         return sendJson(response, 200, { votes: Number(result.count), voted });
     }
 
@@ -825,9 +827,17 @@ app.use('/api', async (request, response) => {
     try {
         await handleApi(request, response, url);
     } catch (error) {
-        if (error.status) return sendJson(response, error.status, { error: error.message });
+        if (error.status) {
+            return sendJson(response, error.status, { 
+                error: error.message, 
+                message: error.message 
+            });
+        }
         console.error('Request failed:', error);
-        return sendJson(response, 500, { error: 'An unexpected server error occurred.' });
+        return sendJson(response, 500, { 
+            error: 'An unexpected server error occurred.', 
+            message: 'An unexpected server error occurred.' 
+        });
     }
 });
 

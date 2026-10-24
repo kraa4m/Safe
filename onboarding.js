@@ -14,7 +14,9 @@ async function apiRequest(path, options = {}) {
         credentials: 'same-origin'
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'The request could not be completed.');
+    if (!response.ok) {
+        throw new Error(result.error || result.message || 'The request could not be completed.');
+    }
     return result;
 }
 
@@ -38,8 +40,6 @@ function initOnboardingModals() {
     const aboutModal = document.getElementById('aboutModal');
     const closeAboutBtn = document.getElementById('closeAboutModal');
     const closeAboutIconBtn = document.getElementById('closeAboutIconBtn');
-
-
 
     const showAuthForm = (mode) => {
         resetAuthForms();
@@ -69,87 +69,87 @@ function initOnboardingModals() {
         });
     }
 
-    document.getElementById('showSignupBtn').addEventListener('click', () => showAuthForm('signup'));
-    document.getElementById('showLoginBtn').addEventListener('click', () => showAuthForm('login'));
+    const showSignupBtn = document.getElementById('showSignupBtn');
+    if (showSignupBtn) showSignupBtn.addEventListener('click', () => showAuthForm('signup'));
+
+    const showLoginBtn = document.getElementById('showLoginBtn');
+    if (showLoginBtn) showLoginBtn.addEventListener('click', () => showAuthForm('login'));
 
     const signupPassword = document.getElementById('signupPassword');
     const signupConfirmPassword = document.getElementById('signupConfirmPassword');
     const validateSignupPassword = () => {
-        signupConfirmPassword.setCustomValidity(
-            signupConfirmPassword.value && signupConfirmPassword.value !== signupPassword.value
-                ? 'Passwords do not match.'
-                : ''
-        );
+        if (signupConfirmPassword && signupPassword) {
+            signupConfirmPassword.setCustomValidity(
+                signupConfirmPassword.value && signupConfirmPassword.value !== signupPassword.value
+                    ? 'Passwords do not match.'
+                    : ''
+            );
+        }
     };
-    signupPassword.addEventListener('input', validateSignupPassword);
-    signupConfirmPassword.addEventListener('input', validateSignupPassword);
+    if (signupPassword && signupConfirmPassword) {
+        signupPassword.addEventListener('input', validateSignupPassword);
+        signupConfirmPassword.addEventListener('input', validateSignupPassword);
+    }
 
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const submitButton = loginForm.querySelector('[type="submit"]');
-        submitButton.disabled = true;
-        authFormStatus.textContent = 'Checking your account...';
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitButton = loginForm.querySelector('[type="submit"]');
+            submitButton.disabled = true;
+            authFormStatus.textContent = 'Checking your account...';
 
-        try {
-            const email = loginForm.elements.email.value.trim().toLowerCase();
-            const password = loginForm.elements.password.value;
-            const { user } = await apiRequest('/api/auth/login', {
-                method: 'POST',
-                body: JSON.stringify({ email, password })
-            });
-            authFormStatus.textContent = 'Login successful. Opening the dashboard...';
-    
-            // NEW CODE
-            if (result && result.user && result.user.role === 'admin') {
-                window.location.replace('admin.html');
-            } else if (result && result.user && result.user.role === 'gsu') {
-                window.location.replace('gsu.html');
-            } else if (result && result.user && result.user.role === 'faculty') {
-                window.location.replace('faculty.html');
-            } else if (result && result.user && ['mict', 'guidance'].includes(result.user.role)) {
-                window.location.replace('stakeholder.html');
-            } else {
+            try {
+                const email = loginForm.elements.email.value.trim().toLowerCase();
+                const password = loginForm.elements.password.value;
+                const { user } = await apiRequest('/api/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email, password })
+                });
+                authFormStatus.textContent = 'Login successful. Opening the dashboard...';
+
+                window.location.replace(getRoleHome(user));
+            } catch (error) {
+                console.error('Login failed:', error);
+                authFormStatus.textContent = error instanceof Error
+                    ? error.message
+                    : 'Unable to log in. Please try again.';
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+    }
+
+    if (signupForm) {
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitButton = signupForm.querySelector('[type="submit"]');
+            submitButton.disabled = true;
+            authFormStatus.textContent = 'Creating your account...';
+
+            try {
+                const name = signupForm.elements.name.value.trim();
+                const email = signupForm.elements.email.value.trim().toLowerCase();
+                const password = signupForm.elements.password.value;
+                if (!name) {
+                    authFormStatus.textContent = 'Enter your full name to register.';
+                    return;
+                }
+                await apiRequest('/api/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, email, password })
+                });
+                authFormStatus.textContent = 'Account created. Opening the dashboard...';
                 window.location.replace('index.html');
+            } catch (error) {
+                console.error('Registration failed:', error);
+                authFormStatus.textContent = error instanceof Error
+                    ? error.message
+                    : 'Unable to create an account. Please try again.';
+            } finally {
+                submitButton.disabled = false;
             }
-        } catch (error) {
-            console.error('Login failed:', error);
-            authFormStatus.textContent = error instanceof Error
-                ? error.message
-                : 'Unable to log in. Please try again.';
-        } finally {
-            submitButton.disabled = false;
-        }
-    });
-
-    signupForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const submitButton = signupForm.querySelector('[type="submit"]');
-        submitButton.disabled = true;
-        authFormStatus.textContent = 'Creating your account...';
-
-        try {
-            const name = signupForm.elements.name.value.trim();
-            const email = signupForm.elements.email.value.trim().toLowerCase();
-            const password = signupForm.elements.password.value;
-            if (!name) {
-                authFormStatus.textContent = 'Enter your full name to register.';
-                return;
-            }
-            await apiRequest('/api/auth/register', {
-                method: 'POST',
-                body: JSON.stringify({ name, email, password })
-            });
-            authFormStatus.textContent = 'Account created. Opening the dashboard...';
-            window.location.replace('index.html');
-        } catch (error) {
-            console.error('Registration failed:', error);
-            authFormStatus.textContent = error instanceof Error
-                ? error.message
-                : 'Unable to create an account. Please try again.';
-        } finally {
-            submitButton.disabled = false;
-        }
-    });
+        });
+    }
 
     // Open About Modal
     if (aboutBtn) {
@@ -192,7 +192,7 @@ function initOnboardingModals() {
     });
 }
 
-// Faculty and Guidance accounts open their own dedicated view; everyone else uses the main dashboard.
+// Role-based redirect router
 function getRoleHome(user) {
     if (user && user.role === 'faculty') return 'faculty.html';
     if (user && user.role === 'guidance') return 'guidance.html';
