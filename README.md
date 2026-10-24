@@ -2,7 +2,7 @@
 
 ## Run locally
 
-Use Node.js 18 or newer with XAMPP's MySQL module running.
+Use Node.js 18 or newer with XAMPP's MySQL module running. The server uses Express, and its page routes render the existing HTML pages with EJS while preserving their current URLs.
 
 ```sh
 npm install
@@ -12,6 +12,8 @@ npm start
 Open [http://localhost:3000](http://localhost:3000). Use the onboarding page to create an account; dashboard access requires signing in.
 
 `npm install` installs the Node.js dependencies. Database setup runs when `npm start` launches the server: it creates the `cspc_safe` database and required tables if they do not exist, and applies additive migrations to existing databases. This reproduces the database schema, not another installation's users, feedback, comments, or other private records; each installation keeps its own data.
+
+Protected dashboards verify the signed-in user's session and role on the server before rendering. The browser-side route guards provide navigation behavior, while API endpoints also enforce their own role checks.
 
 By default, the backend connects to XAMPP MySQL at `127.0.0.1:3306` as `root` with an empty password. Configure a different XAMPP installation in a `.env` file:
 
@@ -24,32 +26,13 @@ DB_NAME=cspc_safe
 PORT=3000
 ADMIN_EMAIL=
 ADMIN_PASSWORD=
-FACULTY_EMAIL=faculty@cspc.edu.ph
-FACULTY_PASSWORD=
-MICT_EMAIL=mict@cspc.edu.ph
-MICT_PASSWORD=
-GUIDANCE_EMAIL=guidance@cspc.edu.ph
-GUIDANCE_PASSWORD=
 GSU_EMAIL=
 GSU_PASSWORD=
 ```
 
-Set each account's email and password together to provision it at startup. The supported prefixes are `ADMIN`, `FACULTY`, `MICT`, `GUIDANCE`, and `GSU`; passwords must be at least 12 characters. The stakeholder email defaults shown above can be changed. These settings provision or update one account per role, so keep the passwords stable between restarts. Copy `.env.example` to `.env`, set unique credentials, and keep `.env` private; never commit real passwords. Administrators can also create stakeholder accounts from the Admin Dashboard.
+Set both `ADMIN_EMAIL` and `ADMIN_PASSWORD` to bootstrap the administrator account; the password must be at least 12 characters. Restart the server and sign in with those credentials. Administrators can then create Faculty, GSU, MICT & ICTU, and Guidance Office accounts from the Stakeholder Accounts section of the Admin Dashboard. Enter the stakeholder's name, sign-in email, role, and an initial password of at least 12 characters, then share those credentials securely. The password is never shown again after creation. Faculty sign in to a separate portal to submit Academic and Administrative feedback and track their reports. MICT & ICTU can manage Technical Support reports. The Guidance Office can manage confidential Guidance & Personal submissions; these are excluded from public, GSU, and administrator feedback lists and are visible only to the submitter and Guidance. Role checks are enforced by the API as well as the interface.
 
-## Stakeholders and responsibilities
-
-| Stakeholder | System role | Responsibility in S.A.F.E. |
-| --- | --- | --- |
-| Student | `user` | Primary users who submit feedback and suggestions, follow updates, and participate in public discussions. |
-| Faculty | `faculty` | Submit Academic or Administrative feedback and track their own submissions. |
-| School Administration | `admin` | Review and act on non-confidential concerns through report status updates and official replies. Provision this account with `ADMIN_EMAIL` and `ADMIN_PASSWORD`. |
-| MICT & ICTU | `mict` | Maintain and support S.A.F.E.; receive Technical Support and legacy Technical / System reports. |
-| Guidance Office | `guidance` | Handle sensitive or personal complaints in a restricted queue. Guidance & Personal submissions are private, excluded from public, GSU, and administrator feedback lists, and visible only to the submitter and Guidance. |
-| General Service Unit | `gsu` | Receive and resolve facilities-related feedback. |
-
-Role checks are enforced by the API as well as the interface. Faculty submissions are restricted to Academic and Administrative categories. Facilities reports are assigned to GSU; other non-confidential concerns, including dining and campus safety, are assigned to School Administration. Each office's management queue and status updates are limited to its assigned categories.
-
-Leave a role's email and password blank to provision that account through the Admin Dashboard instead. The database startup migration adds the confidential-feedback flag to existing installations. Selecting the Guidance & Personal category automatically makes a submission private.
+`GSU_EMAIL` and `GSU_PASSWORD` remain optional for deployments that provision a GSU account at startup; accounts created by an administrator do not require these settings. The database startup migration adds the confidential-feedback flag to existing installations. Selecting the Guidance & Personal category automatically makes a submission private.
 
 You can also open phpMyAdmin at [http://localhost/phpmyadmin](http://localhost/phpmyadmin) to inspect the database and tables. The MySQL account needs permission to create the database and tables. Passwords are stored as salted scrypt hashes; session tokens are stored as hashes. Do not expose this development server directly to the public internet; deploy behind HTTPS and use production-grade database credentials and configuration.
 

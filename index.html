@@ -40,15 +40,7 @@
                         redirectToPortal('faculty.html');
                         return;
                     }
-                    if (data.user.role === 'gsu') {
-                        redirectToPortal('gsu.html');
-                        return;
-                    }
-                    if (data.user.role === 'guidance') {
-                        redirectToPortal('guidance.html');
-                        return;
-                    }
-                    if (data.user.role === 'mict') {
+                    if (['mict', 'guidance'].includes(data.user.role)) {
                         redirectToPortal('stakeholder.html');
                         return;
                     }

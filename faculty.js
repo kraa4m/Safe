@@ -44,19 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
     }
 
-    function initTheme() {
-        let theme = 'light';
-        try {
-            theme = localStorage.getItem('safe_cspc_theme') || 'light';
-        } catch (error) {
-            console.error('Unable to read theme preference:', error);
-        }
-        document.documentElement.dataset.theme = theme;
-        const button = document.getElementById('facultyThemeToggle');
-        button.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
-        button.setAttribute('aria-pressed', String(theme === 'dark'));
-    }
-
     async function loadSubmissions() {
         try {
             const { feedback } = await apiRequest('/api/stakeholder/feedback');
@@ -123,26 +110,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     statusFilter.addEventListener('change', renderSubmissions);
-    initTheme();
     document.getElementById('facultyThemeToggle').addEventListener('click', () => {
         const root = document.documentElement;
-        const theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
-        root.dataset.theme = theme;
-        const button = document.getElementById('facultyThemeToggle');
-        button.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`);
-        button.setAttribute('aria-pressed', String(theme === 'dark'));
-        try {
-            localStorage.setItem('safe_cspc_theme', theme);
-        } catch (error) {
-            console.error('Unable to save theme preference:', error);
-        }
+        root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
     });
     document.getElementById('facultyLogout').addEventListener('click', async () => {
         try {
             await apiRequest('/api/auth/logout', { method: 'POST' });
+        } finally {
             window.location.assign('onboarding.html');
-        } catch (error) {
-            notify(error.message || 'Unable to sign out. Please try again.');
         }
     });
 
